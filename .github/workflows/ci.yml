@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  DATABASE_URL: postgresql://user:password@localhost:5432/booking_db?schema=public
+
+jobs:
+  # Enforces the Jira-key convention (BOOK-n) that powers the traceability
+  # table. Only runs on PRs.
+  pr-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: PR title must reference a Jira issue
+        run: |
+          echo "${{ github.event.pull_request.title }}" | grep -qE 'BOOK-[0-9]+' \
+            || { echo 'PR title must contain a Jira key, e.g. "BOOK-12: add overlap check"'; exit 1; }
+
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: booking_db
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U user -d booking_db"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+      - run: npm run typecheck
+
+      - run: npx prisma migrate deploy
+      - run: npm run db:seed
+
+      - run: npm test
+
+      - run: npm run build
+
+      # Versioned release artifact (lab section 7.3): the standalone server
+      # plus everything needed to run migrations and install dependencies.
+      - name: Package standalone artifact
+        run: |
+          mkdir -p release
+          cp -r .next/standalone release/app
+          cp -r .next/static release/app/.next/static
+          cp -r prisma prisma.config.ts package.json package-lock.json release/app/
+          tar -czf booking-app-${{ github.sha }}.tar.gz -C release app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: booking-app-${{ github.sha }}
+          path: booking-app-${{ github.sha }}.tar.gz
+          retention-days: 90

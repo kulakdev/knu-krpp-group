@@ -1,0 +1,99 @@
+import { NextResponse } from "next/server";
+import { AppError, ValidationError } from "@/lib/errors";
+import { logOperation } from "@/lib/logger";
+
+type RouteContext = { params: Promise<Record<string, string>> };
+type Handler<C extends RouteContext = RouteContext> = (
+  req: Request,
+  ctx?: C,
+) => Promise<Response>;
+
+/**
+ * Wraps every API route handler with:
+ *  - a correlation id (x-request-id response header, lab section 8.2);
+ *  - structured operation logging with duration;
+ *  - typed-error mapping so validation/conflict/access failures stay
+ *    distinguishable from technical failures (lab section 2.2).
+ *
+ * Route handlers contain no business logic — they parse input, delegate to
+ * lib/ services, and shape the response.
+ */
+export function apiHandler<C extends RouteContext = RouteContext>(
+  op: string,
+  handler: (
+    req: Request,
+    ctx: C & { requestId: string },
+  ) => Promise<Response>,
+): Handler<C> {
+  return async (req, ctx) => {
+    const requestId = crypto.randomUUID();
+    const startedAt = Date.now();
+    let statusCode = 200;
+
+    // Next always passes a context for dynamic routes; static routes and
+    // direct test invocations may omit it — default to empty params.
+    const fullCtx = {
+      ...(ctx ?? { params: Promise.resolve({}) }),
+      requestId,
+    } as C & { requestId: string };
+
+    try {
+      const res = await handler(req, fullCtx);
+      statusCode = res.status;
+      res.headers.set("x-request-id", requestId);
+      log(req, op, requestId, "ok", statusCode, startedAt);
+      return res;
+    } catch (error) {
+      const appError =
+        error instanceof AppError
+          ? error
+          : new AppError("Internal server error", 500);
+      statusCode = appError.statusCode;
+      if (!(error instanceof AppError)) {
+        console.error(error);
+      }
+      log(req, op, requestId, "error", statusCode, startedAt, appError);
+      return NextResponse.json(
+        { error: appError.message, requestId },
+        { status: statusCode, headers: { "x-request-id": requestId } },
+      );
+    }
+  };
+}
+
+function log(
+  req: Request,
+  op: string,
+  requestId: string,
+  result: "ok" | "error",
+  statusCode: number,
+  startedAt: number,
+  error?: AppError,
+): void {
+  logOperation({
+    ts: new Date().toISOString(),
+    // Business outcomes (4xx: validation, ownership, conflict) are expected
+    // results, not faults — `result` records failure, `level` stays reserved
+    // for technical problems so incident-drill triage by level stays clean.
+    level: statusCode >= 500 ? "error" : "info",
+    requestId,
+    op,
+    userId: req.headers.get("x-user-id") ?? undefined,
+    result,
+    statusCode,
+    durationMs: Date.now() - startedAt,
+    error: error?.message,
+  });
+}
+
+/** Parses an ISO-8601 string into a Date or throws ValidationError (400). */
+export function parseIsoDateTime(value: unknown, field: string): Date {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new ValidationError(`${field} is required (ISO 8601 string)`);
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new ValidationError(`${field} is not a valid ISO 8601 datetime`);
+  }
+  return date;
+}
