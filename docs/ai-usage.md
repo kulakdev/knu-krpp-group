@@ -21,5 +21,6 @@ under their name.
 | Date | Member | Tool | Used for | Verified by |
 |---|---|---|---|---|
 | 2026-09-17 | tech lead | Kilo (kimi-k3) | Repo bootstrap: scaffold, configs, infra scripts, docs skeletons, task stubs | tech lead |
+| 2026-10-25 | Danylo Filatov | Claude Code (Opus 5.5) + Atlassian MCP | Jira backlog from docs/backlog.md (BOOK-1..24, links), Confluence page skeletons, README/backlog doc sync | Danylo Filatov |
 
 <!-- Append one row per meaningful usage. Sprint-level granularity is fine. -->
