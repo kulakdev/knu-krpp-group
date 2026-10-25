@@ -4,8 +4,10 @@ Group lab project — team development lifecycle (v1.0 -> incident -> v2.0).
 Students book university rooms for time intervals; overlapping bookings for
 the same room are impossible; v2.0 adds admin approval for large rooms.
 
-**Confluence home:** <link — add after space is created>
-**Jira project:** <link — key: BOOK>
+**Confluence home:** https://knu-team-qhkppj1p.atlassian.net/wiki/spaces/SD/overview
+(entry point for all project materials)
+**Jira project:** https://knu-team-qhkppj1p.atlassian.net/jira/software/projects/KAN/boards
+(key is being renamed `KAN` -> `BOOK`; issue numbers stay the same)
 
 ## Stack
 

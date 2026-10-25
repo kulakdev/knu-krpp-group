@@ -32,6 +32,23 @@ BOOK-8/9/10. BOOK-6 blocks BOOK-8/11. BOOK-7 blocks BOOK-10.
 | BOOK-16 | Integration tests: lifecycle + access (403) | `tests/integration/` | qa |
 | BOOK-17 | Perf script for QR-3 + quality-results.md | `scripts/perf-availability.ts` | qa |
 
+## User stories and change request
+
+Tasks above implement these stories (linked in Jira as "relates to").
+
+| Key | Story | Implemented by | Release |
+|---|---|---|---|
+| BOOK-18 | FR-01 View rooms and availability for an interval | BOOK-6, 11, 13 | v1.0 |
+| BOOK-19 | FR-02 Create a booking | BOOK-6, 8, 12, 13 | v1.0 |
+| BOOK-20 | FR-03 View my bookings | BOOK-9, 12, 13 | v1.0 |
+| BOOK-21 | FR-04 Cancel my own booking | BOOK-7, 10, 12, 13 | v1.0 |
+| BOOK-22 | Extra story (team of 4, lab 2.3): filter rooms by equipment — awaiting team confirmation, tasks not split yet | — | v1.0 |
+| BOOK-23 | Change request: admin approval for rooms with capacity > 100 | tasks created at KT-6 | v2.0 |
+| BOOK-24 | Confluence knowledge base skeleton + repo docs sync | — | v1.0 |
+
+Jira currently shows these issues as `KAN-<n>` until the project key is
+renamed to `BOOK`; the numbers are identical.
+
 ## Acceptance criteria per task
 
 ### BOOK-6 — Interval logic
@@ -98,7 +115,7 @@ BOOK-8/9/10. BOOK-6 blocks BOOK-8/11. BOOK-7 blocks BOOK-10.
   build; appends machine specs, commit SHA, and results to
   `docs/quality-results.md`. Threshold: p95 <= 1s.
 
-## v2.0 change request (placeholder, lab section 10)
+## v2.0 change request (BOOK-23, lab section 10)
 
 Rooms with capacity > 100 require admin approval: new status PENDING
 (reserves slot), admin transitions PENDING -> ACTIVE | REJECTED, requester
