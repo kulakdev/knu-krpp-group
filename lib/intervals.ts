@@ -7,26 +7,23 @@
  *
  * Contract: docs/api-contract.md, lab section 2.2. Tests: tests/unit/intervals.test.ts
  */
-import { NotImplementedError } from "@/lib/errors";
 
-// TODO(BOOK-6): implement interval validity check (start < end).
+/** True when start is strictly before end. Invalid dates (NaN) are rejected. */
 export function isValidInterval(start: Date, end: Date): boolean {
-  void start;
-  void end;
-  throw new NotImplementedError("BOOK-6");
+  return start.getTime() < end.getTime();
 }
 
-// TODO(BOOK-6): implement [start, end) overlap detection — strict
-// inequalities so touching boundaries do not count as overlap.
+/**
+ * [start, end) overlap: strict inequalities, so touching boundaries
+ * (aEnd === bStart) do not count as overlap.
+ */
 export function overlaps(
   aStart: Date,
   aEnd: Date,
   bStart: Date,
   bEnd: Date,
 ): boolean {
-  void aStart;
-  void aEnd;
-  void bStart;
-  void bEnd;
-  throw new NotImplementedError("BOOK-6");
+  return (
+    aStart.getTime() < bEnd.getTime() && bStart.getTime() < aEnd.getTime()
+  );
 }
