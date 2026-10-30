@@ -1,5 +1,6 @@
 import type { User } from "@prisma/client";
-import { NotImplementedError } from "@/lib/errors";
+import { UnauthorizedError } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
 
 export const USER_ID_HEADER = "x-user-id";
 
@@ -8,10 +9,21 @@ export const USER_ID_HEADER = "x-user-id";
  * x-user-id request header and is validated against the seeded users table.
  * This is a training-environment mechanism, not a security boundary.
  *
- * TODO(BOOK-12): read USER_ID_HEADER from req; missing header or unknown
- * user -> UnauthorizedError (401); known user -> the user record.
+ * Missing header or unknown user -> UnauthorizedError (401); known user ->
+ * the user record (including its role).
  */
 export async function getCurrentUser(req: Request): Promise<User> {
-  void req;
-  throw new NotImplementedError("BOOK-12");
+  const userId = req.headers.get(USER_ID_HEADER)?.trim();
+  if (!userId) {
+    throw new UnauthorizedError(`Missing ${USER_ID_HEADER} header`);
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    // The raw header value is not echoed back to keep the response free of
+    // caller-controlled text.
+    throw new UnauthorizedError(`Unknown user in ${USER_ID_HEADER} header`);
+  }
+
+  return user;
 }
