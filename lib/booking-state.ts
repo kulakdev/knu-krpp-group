@@ -1,5 +1,5 @@
 import type { BookingStatus } from "@prisma/client";
-import { InvalidTransitionError, NotImplementedError } from "@/lib/errors";
+import { InvalidTransitionError } from "@/lib/errors";
 
 /**
  * Booking state machine — v1.0.
@@ -15,11 +15,9 @@ import { InvalidTransitionError, NotImplementedError } from "@/lib/errors";
  * its slot (lab section 10.1).
  */
 
-// TODO(BOOK-7): fill in the v1.0 transition table (ACTIVE -> CANCELLED only;
-// CANCELLED is terminal).
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- consumed by canTransition once BOOK-7 is implemented
+// Allowed transitions per source status; a status with no targets is terminal.
 const TRANSITIONS: Readonly<Record<BookingStatus, readonly BookingStatus[]>> = {
-  ACTIVE: [],
+  ACTIVE: ["CANCELLED"],
   CANCELLED: [],
 };
 
@@ -30,17 +28,14 @@ const TRANSITIONS: Readonly<Record<BookingStatus, readonly BookingStatus[]>> = {
  */
 export const BLOCKING_STATUSES: readonly BookingStatus[] = ["ACTIVE"];
 
-// TODO(BOOK-7): derive from TRANSITIONS.
 export function canTransition(
   from: BookingStatus,
   to: BookingStatus,
 ): boolean {
-  void from;
-  void to;
-  throw new NotImplementedError("BOOK-7");
+  return TRANSITIONS[from].includes(to);
 }
 
-// TODO(BOOK-7): throw InvalidTransitionError when canTransition is false.
+/** Throws InvalidTransitionError (409) when the transition is not allowed. */
 export function assertTransition(
   from: BookingStatus,
   to: BookingStatus,
