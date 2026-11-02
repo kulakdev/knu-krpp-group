@@ -106,15 +106,41 @@ export async function cancelBooking(
 }
 
 /**
- * TODO(BOOK-11): list all rooms ordered by id. When a time filter is given,
- * validate it and annotate each room with isAvailable based on overlapping
- * bookings in BLOCKING_STATUSES ([start, end) semantics). Invalid interval
- * -> ValidationError.
+ * Lists all rooms ordered by id. With a time filter each room carries
+ * isAvailable: false when a booking in BLOCKING_STATUSES overlaps the
+ * interval. startTime >= endTime -> ValidationError.
  */
 export async function listRooms(filter?: {
   startTime: Date;
   endTime: Date;
 }): Promise<(Room & { isAvailable?: boolean })[]> {
-  void filter;
-  throw new NotImplementedError("BOOK-11");
+  if (!filter) {
+    return prisma.room.findMany({ orderBy: { id: "asc" } });
+  }
+
+  const { startTime, endTime } = filter;
+  if (!isValidInterval(startTime, endTime)) {
+    throw new ValidationError("startTime must be before endTime");
+  }
+
+  const [rooms, busy] = await Promise.all([
+    prisma.room.findMany({ orderBy: { id: "asc" } }),
+    // Same [start, end) rule as overlaps() in lib/intervals, run in the
+    // database so the check stays one indexed query (QR-3).
+    prisma.booking.findMany({
+      where: {
+        status: { in: [...BLOCKING_STATUSES] },
+        startTime: { lt: endTime },
+        endTime: { gt: startTime },
+      },
+      select: { roomId: true },
+      distinct: ["roomId"],
+    }),
+  ]);
+
+  const busyRoomIds = new Set(busy.map((booking) => booking.roomId));
+  return rooms.map((room) => ({
+    ...room,
+    isAvailable: !busyRoomIds.has(room.id),
+  }));
 }
