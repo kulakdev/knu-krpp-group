@@ -40,6 +40,7 @@ Seeded identities (use as `x-user-id` / in the UI switcher):
 |---|---|
 | `npm test` | all tests (needs DB running + migrations applied) |
 | `npm run test:unit` | DB-free unit tests |
+| `npm run ops:report -- server.log` | operation metrics per minute from the server log |
 | `npm run lint` / `npm run typecheck` | static checks (same as CI) |
 | `npm run db:migrate` | create/apply a migration during development |
 | `npm run db:seed` | re-apply the deterministic seed |

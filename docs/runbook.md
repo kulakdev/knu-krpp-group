@@ -23,6 +23,17 @@ npm run dev                    # or: node .next/standalone/server.js for the pac
   ```
   The failing response body and the `x-request-id` response header carry
   the same id.
+- **Operation metrics (lab section 8.2):** capture the server log and
+  aggregate it into 1-minute windows — ok/error counts, error rate and
+  p50/p95 duration per operation:
+  ```bash
+  node .next/standalone/server.js 2>&1 | tee server.log
+  npm run ops:report -- server.log            # --window <seconds>, default 60
+  ```
+  **Alert threshold:** a window is flagged `ALERT` when its error rate is
+  above 50% with at least 3 requests, or when `/api/health` answered 503.
+  During the incident drill the report shows the before / during / after
+  windows; only the failure window should be flagged.
 - **Common failure shapes:** 400 validation, 401 mock-auth, 403 ownership,
   404 unknown id, 409 slot conflict — all expected business outcomes, not
   technical faults. 5xx indicates a real defect or infrastructure issue.
