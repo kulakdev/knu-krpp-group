@@ -77,14 +77,17 @@ export async function createBooking(input: {
 }
 
 /**
- * TODO(BOOK-9): return all bookings (ACTIVE and CANCELLED) belonging to the
- * user, including the related room, ordered by startTime ascending.
+ * Returns all bookings (ACTIVE and CANCELLED) belonging to the user,
+ * including the related room, ordered by startTime ascending.
  */
 export async function listBookingsForUser(
   userId: string,
 ): Promise<BookingWithRoom[]> {
-  void userId;
-  throw new NotImplementedError("BOOK-9");
+  return prisma.booking.findMany({
+    where: { userId },
+    include: { room: true },
+    orderBy: { startTime: "asc" },
+  });
 }
 
 /**

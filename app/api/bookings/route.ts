@@ -1,19 +1,23 @@
 import { NextResponse } from "next/server";
 import { apiHandler, parseIsoDateTime } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth";
-import { createBooking, serializeBooking } from "@/lib/booking-service";
-import { NotImplementedError, ValidationError } from "@/lib/errors";
+import {
+  createBooking,
+  listBookingsForUser,
+  serializeBooking,
+} from "@/lib/booking-service";
+import { ValidationError } from "@/lib/errors";
 
 /**
  * GET /api/bookings
  * Header: x-user-id
  * Returns the requesting user's bookings (active and cancelled).
- *
- * TODO(BOOK-9): authenticate via getCurrentUser, delegate to
- * listBookingsForUser, return { bookings } with roomName included.
+ * 200 OK, 401 unknown user.
  */
-export const GET = apiHandler("bookings.list", async () => {
-  throw new NotImplementedError("BOOK-9");
+export const GET = apiHandler("bookings.list", async (req) => {
+  const user = await getCurrentUser(req);
+  const bookings = await listBookingsForUser(user.id);
+  return NextResponse.json({ bookings: bookings.map(serializeBooking) });
 });
 
 /**
