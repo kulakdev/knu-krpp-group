@@ -45,6 +45,7 @@ Seeded identities (use as `x-user-id` / in the UI switcher):
 | `npm run db:seed` | re-apply the deterministic seed |
 | `scripts/smoke.sh` | post-deploy smoke check of the main user path |
 | `scripts/backup.sh` / `scripts/restore.sh` | database dump and verified restore |
+| `npm run perf:availability -- --reset` | QR-3 performance check against a running server (replaces all bookings) |
 
 Note: `"lint": "eslint"` — Next.js 16 removed `next lint`; ESLint runs
 directly (flat config in `eslint.config.mjs`).

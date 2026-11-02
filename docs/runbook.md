@@ -35,6 +35,20 @@ BASE_URL=http://localhost:3000 scripts/smoke.sh
 
 Exercises health -> create -> list -> cancel and must print `SMOKE OK`.
 
+## Performance check (QR-3)
+
+Run against the production build, never against data you need to keep —
+`--reset` replaces all bookings with the 1,000-booking perf dataset:
+
+```bash
+npm run build
+node .next/standalone/server.js            # separate terminal
+BASE_URL=http://localhost:3000 npm run perf:availability -- --reset
+```
+
+Prints p50/p95/max and appends a dated entry (commit, machine, result) to
+`docs/quality-results.md`; exits non-zero when p95 > 1 s.
+
 ## Backup and restore (QR-2)
 
 ```bash
