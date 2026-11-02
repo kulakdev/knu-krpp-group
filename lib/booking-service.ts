@@ -1,20 +1,39 @@
-import { NotImplementedError } from "@/lib/errors";
+import {
+  ConflictError,
+  NotFoundError,
+  NotImplementedError,
+  ValidationError,
+} from "@/lib/errors";
 import type { Booking, Room, User } from "@prisma/client";
+import { BLOCKING_STATUSES } from "@/lib/booking-state";
+import { isValidInterval } from "@/lib/intervals";
+import { prisma } from "@/lib/prisma";
 
 export type BookingWithRoom = Booking & { room: Room };
 
+/** Wire shape of a booking (docs/api-contract.md), timestamps in ISO 8601 UTC. */
+export function serializeBooking(booking: BookingWithRoom) {
+  return {
+    id: booking.id,
+    roomId: booking.roomId,
+    roomName: booking.room.name,
+    userId: booking.userId,
+    startTime: booking.startTime.toISOString(),
+    endTime: booking.endTime.toISOString(),
+    status: booking.status,
+    createdAt: booking.createdAt.toISOString(),
+  };
+}
+
 /**
- * TODO(BOOK-8): create a booking with race-condition protection (ADR-001).
+ * Creates a booking with race-condition protection (ADR-001): the room row
+ * is locked with SELECT ... FOR UPDATE, so concurrent requests for the same
+ * room run the overlap check one at a time and the loser gets 409.
  *
- * Contract:
- *  - validate startTime < endTime via lib/intervals (else ValidationError);
- *  - run inside ONE prisma.$transaction: lock the room row with
- *    SELECT ... FOR UPDATE (tx.$queryRaw), then check for overlapping
- *    bookings in BLOCKING_STATUSES with [start, end) semantics (strict
-    inequalities: startTime < end && endTime > start);
- *  - overlap -> throw ConflictError (transaction rolls back);
+ *  - startTime >= endTime -> ValidationError;
  *  - unknown room -> NotFoundError;
- *  - success -> create booking (status defaults to ACTIVE), include room.
+ *  - overlap with a booking in BLOCKING_STATUSES -> ConflictError
+ *    (the transaction rolls back).
  */
 export async function createBooking(input: {
   userId: string;
@@ -22,8 +41,39 @@ export async function createBooking(input: {
   startTime: Date;
   endTime: Date;
 }): Promise<BookingWithRoom> {
-  void input;
-  throw new NotImplementedError("BOOK-8");
+  const { userId, roomId, startTime, endTime } = input;
+  if (!isValidInterval(startTime, endTime)) {
+    throw new ValidationError("startTime must be before endTime");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const lockedRooms = await tx.$queryRaw<{ id: string }[]>`
+      SELECT id FROM "Room" WHERE id = ${roomId} FOR UPDATE
+    `;
+    if (lockedRooms.length === 0) {
+      throw new NotFoundError("Room not found");
+    }
+
+    // Same [start, end) rule as overlaps() in lib/intervals, expressed as a
+    // query so the check runs inside the locked transaction.
+    const overlapping = await tx.booking.findFirst({
+      where: {
+        roomId,
+        status: { in: [...BLOCKING_STATUSES] },
+        startTime: { lt: endTime },
+        endTime: { gt: startTime },
+      },
+      select: { id: true },
+    });
+    if (overlapping) {
+      throw new ConflictError();
+    }
+
+    return tx.booking.create({
+      data: { userId, roomId, startTime, endTime },
+      include: { room: true },
+    });
+  });
 }
 
 /**
