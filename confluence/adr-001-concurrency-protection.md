@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (v1.0)
+Accepted (v1.0); reviewed for v2.0 — kept (see "Review — v2.0" below)
 
 ## Context
 
@@ -34,3 +34,21 @@ The concrete isolation mechanism is a Prisma interactive transaction with `SELEC
 ## Review Condition
 
 Revisit if developer machine constraints make running local Docker containers unfeasible. **Scheduled review for v2.0:** the set of slot-blocking statuses changes when `PENDING` is introduced (a pending booking must also reserve its slot, Section 10.1), so the overlap query inside the locked transaction must be re-validated against `[ACTIVE, PENDING]`.
+
+## Review — v2.0 (2026-11-03, BOOK-29)
+
+**Outcome: decision kept.** Details in `docs/v2-impact-analysis.md`, section 5.
+
+- The blocking set becomes `[ACTIVE, PENDING]`. The overlap check inside the
+  locked transaction reads `BLOCKING_STATUSES`, so a pending request reserves
+  its slot without changing the locking scheme; the concurrency test
+  (BOOK-15) remains the regression guard.
+- Admin approve / reject do not take the room lock: approval keeps the slot
+  blocking and rejection frees it, so neither can create an overlap. Two
+  decisions on one request are serialised by a conditional update on
+  `status = PENDING`.
+- A new race between the owner's cancel and an admin decision is handled by
+  a conditional update in `cancelBooking` (409 if the status changed since it
+  was read).
+- Next review condition: bookings that span several rooms, or a second
+  approval level, would change the lock scope.
