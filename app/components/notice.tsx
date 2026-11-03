@@ -1,6 +1,8 @@
 "use client";
 
+import { CircleCheck } from "lucide-react";
 import { ErrorBox } from "@/app/components/error-box";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 import { useDashboardStore } from "@/store/dashboard-store";
 
 /** Outcome of the last book / cancel action. */
@@ -9,12 +11,11 @@ export function Notice() {
 
   if (notice?.kind === "success") {
     return (
-      <p
-        role="status"
-        className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
-      >
-        {notice.text}
-      </p>
+      // A success is announced politely, not as an alert.
+      <Alert role="status">
+        <CircleCheck />
+        <AlertTitle>{notice.text}</AlertTitle>
+      </Alert>
     );
   }
   return notice?.kind === "error" ? <ErrorBox error={notice.error} /> : null;
