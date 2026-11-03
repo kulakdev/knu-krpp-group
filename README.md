@@ -53,7 +53,10 @@ directly (flat config in `eslint.config.mjs`).
 
 ## Repository layout
 
-- `app/` — UI + API route handlers (transport only)
+- `app/` — API route handlers (`app/api/`, transport only) and the UI
+  (`app/page.tsx` composing `app/components/`)
+- `api-client/` — UI data layer: requests and React Query hooks per domain
+- `store/`, `providers/` — UI state (zustand) and the query provider
 - `lib/` — business logic and infrastructure
 - `prisma/` — schema, migrations, seed
 - `tests/` — Vitest suites + harness (`tests/helpers/`)
