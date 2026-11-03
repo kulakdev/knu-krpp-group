@@ -1,11 +1,12 @@
 import {
   ConflictError,
+  ForbiddenError,
   NotFoundError,
-  NotImplementedError,
   ValidationError,
 } from "@/lib/errors";
+import { BookingStatus } from "@prisma/client";
 import type { Booking, Room, User } from "@prisma/client";
-import { BLOCKING_STATUSES } from "@/lib/booking-state";
+import { assertTransition, BLOCKING_STATUSES } from "@/lib/booking-state";
 import { isValidInterval } from "@/lib/intervals";
 import { prisma } from "@/lib/prisma";
 
@@ -91,21 +92,36 @@ export async function listBookingsForUser(
 }
 
 /**
- * TODO(BOOK-10): cancel a booking, releasing the slot.
- *
- * Contract (lab section 2.2 — rights enforced in server logic):
+ * Cancels a booking, releasing the slot. Rights are enforced here, not in
+ * the UI (lab section 2.2):
  *  - unknown booking -> NotFoundError;
- *  - actor is not the owner -> ForbiddenError (403);
- *  - already CANCELLED -> idempotent no-op, return current record;
- *  - otherwise assertTransition(ACTIVE -> CANCELLED) and update status.
+ *  - actor is not the owner -> ForbiddenError (403), booking unchanged;
+ *  - already CANCELLED -> idempotent no-op, returns the current record.
  */
 export async function cancelBooking(
   bookingId: string,
   actor: User,
 ): Promise<BookingWithRoom> {
-  void bookingId;
-  void actor;
-  throw new NotImplementedError("BOOK-10");
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { room: true },
+  });
+  if (!booking) {
+    throw new NotFoundError("Booking not found");
+  }
+  if (booking.userId !== actor.id) {
+    throw new ForbiddenError("Only the owner can cancel this booking");
+  }
+  if (booking.status === BookingStatus.CANCELLED) {
+    return booking;
+  }
+
+  assertTransition(booking.status, BookingStatus.CANCELLED);
+  return prisma.booking.update({
+    where: { id: bookingId },
+    data: { status: BookingStatus.CANCELLED },
+    include: { room: true },
+  });
 }
 
 /**
