@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useDashboardStore } from "@/store/dashboard-store";
-import { MOCK_USERS, useUserStore } from "@/store/user-store";
+import { MOCK_USERS, type MockUser, useUserStore } from "@/store/user-store";
 
 /** Picks the mock user sent as x-user-id (ADR-002). */
 export function UserSwitcher() {
@@ -13,22 +13,26 @@ export function UserSwitcher() {
   return (
     <div className="space-y-1">
       <p className="text-xs text-muted-foreground">Acting as (x-user-id)</p>
-      <div className="flex gap-1" role="group" aria-label="Mock user">
+      <ToggleGroup
+        aria-label="Mock user"
+        variant="outline"
+        size="sm"
+        spacing={1}
+        value={[userId]}
+        onValueChange={(value) => {
+          // Pressing the active user again would empty the group; keep it.
+          const next = value[0] as MockUser["id"] | undefined;
+          if (!next) return;
+          setUserId(next);
+          setNotice(null);
+        }}
+      >
         {MOCK_USERS.map((user) => (
-          <Button
-            key={user.id}
-            size="sm"
-            variant={user.id === userId ? "default" : "outline"}
-            aria-pressed={user.id === userId}
-            onClick={() => {
-              setUserId(user.id);
-              setNotice(null);
-            }}
-          >
+          <ToggleGroupItem key={user.id} value={user.id}>
             {user.name}
-          </Button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
     </div>
   );
 }
