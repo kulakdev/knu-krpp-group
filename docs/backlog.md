@@ -122,3 +122,5 @@ Rooms with capacity > 100 require admin approval: new status PENDING
 may cancel PENDING, decisions are audited (author, time, result). Impact
 analysis, migration, and ADR review are prepared in КТ-6 — do not start
 before v1.0 is tagged.
+Impact analysis, risks, release stages and the ADR-001 review:
+[`docs/v2-impact-analysis.md`](v2-impact-analysis.md) (BOOK-29).
