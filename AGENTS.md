@@ -67,9 +67,18 @@ Enforced by ESLint + typecheck in CI; agents must conform before proposing.
 
 ## 4. Project map
 
-- `app/api/**` — transport layer (route handlers, stubs until BOOK-8..11)
+- `app/api/**` — transport layer (route handlers)
+- `app/page.tsx` + `app/components/**` — UI: the page only composes
+  client blocks colocated with it (v2.0 adds `app/admin/` the same way)
+- `api-client/**` — the UI's data layer per domain (`rooms/`, `bookings/`:
+  `api.ts` requests, `hooks.ts` React Query hooks + keys); `http.ts` is the
+  only place the UI calls `fetch`. Response types come from the server via
+  `import type` — never hand-copy them
+- `store/**` — zustand UI state (persisted mock user, dashboard interval
+  and notice); `providers/**` — `QueryProvider` used by `app/layout.tsx`
 - `lib/**` — business logic and infrastructure (`booking-service`,
   `booking-state`, `intervals`, `auth`, `errors`, `api`, `prisma`, `logger`)
+  plus pure UI helpers (`kyiv-time`, `api-error`)
 - `prisma/**` — schema, migrations, deterministic seed
 - `tests/**` — Vitest: `unit/`, `integration/`, `helpers/`
 - `scripts/**` — smoke, backup/restore, fault injection
