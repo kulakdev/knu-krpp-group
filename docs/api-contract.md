@@ -9,7 +9,8 @@ are displayed in Europe/Kyiv in the UI. Every response carries an
 
 - **Auth:** none.
 - **Input:** optional query `startTime`, `endTime` (ISO 8601).
-- **Result 200:** `{ "rooms": [{ id, name, capacity, isAvailable? }] }` —
+- **Result 200:** `{ "rooms": [{ id, name, capacity, equipment, isAvailable? }] }`
+  — `equipment` is a list of `PROJECTOR | COMPUTERS | WHITEBOARD`;
   `isAvailable` present only when both time params are given.
 - **Errors:** 400 — only one time param, unparsable datetime, or
   `startTime >= endTime`.

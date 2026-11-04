@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { Equipment, PrismaClient, Role } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 /**
@@ -29,13 +29,29 @@ export async function resetDatabase(): Promise<void> {
   }
 
   for (const room of [
-    { id: "room-101", name: "Auditorium 101", capacity: 30 },
-    { id: "room-102", name: "Auditorium 102", capacity: 50 },
-    { id: "hall-main", name: "Grand Conference Hall", capacity: 150 },
+    {
+      id: "room-101",
+      name: "Auditorium 101",
+      capacity: 30,
+      equipment: [Equipment.PROJECTOR, Equipment.WHITEBOARD],
+    },
+    {
+      id: "room-102",
+      name: "Auditorium 102",
+      capacity: 50,
+      equipment: [Equipment.COMPUTERS, Equipment.PROJECTOR],
+    },
+    {
+      id: "hall-main",
+      name: "Grand Conference Hall",
+      capacity: 150,
+      equipment: [Equipment.PROJECTOR, Equipment.WHITEBOARD],
+    },
   ]) {
+    // Equipment is reset too, so filter tests start from the same data.
     await testPrisma.room.upsert({
       where: { id: room.id },
-      update: {},
+      update: { equipment: room.equipment },
       create: room,
     });
   }
