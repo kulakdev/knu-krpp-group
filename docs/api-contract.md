@@ -48,7 +48,8 @@ are displayed in Europe/Kyiv in the UI. Every response carries an
   withdraws the request. Re-cancelling an already cancelled own booking is
   idempotent.
 - **Errors:** 401 — missing/unknown `x-user-id`; 403 — non-owner; 404 —
-  unknown booking id; 409 — the booking was rejected (v2.0).
+  unknown booking id; 409 — the booking was rejected (v2.0), or the booking
+  changed meanwhile (concurrent admin decision).
 
 ## GET /api/admin/bookings (v2.0)
 

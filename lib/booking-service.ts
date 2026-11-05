@@ -113,7 +113,8 @@ export async function listBookingsForUser(
  *  - actor is not the owner -> ForbiddenError (403), booking unchanged;
  *  - already CANCELLED -> idempotent no-op, returns the current record;
  *  - ACTIVE or PENDING (v2.0: the owner withdraws a request) -> CANCELLED;
- *  - REJECTED -> InvalidTransitionError (409): nothing left to cancel.
+ *  - REJECTED -> InvalidTransitionError (409): nothing left to cancel;
+ *  - status changed by a concurrent decision -> ConflictError (409).
  */
 export async function cancelBooking(
   bookingId: string,
@@ -134,9 +135,18 @@ export async function cancelBooking(
   }
 
   assertTransition(booking.status, BookingStatus.CANCELLED);
-  return prisma.booking.update({
-    where: { id: bookingId },
+  // Conditional on the status read above: if an admin decided in between,
+  // nothing matches and the cancel is refused instead of overwriting the
+  // decision with a forbidden transition (v2.0 impact analysis, risk V5).
+  const { count } = await prisma.booking.updateMany({
+    where: { id: bookingId, status: booking.status },
     data: { status: BookingStatus.CANCELLED },
+  });
+  if (count === 0) {
+    throw new ConflictError("The booking changed meanwhile; reload and try again");
+  }
+  return prisma.booking.findUniqueOrThrow({
+    where: { id: bookingId },
     include: { room: true },
   });
 }
