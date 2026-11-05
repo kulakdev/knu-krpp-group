@@ -146,6 +146,29 @@ describe("admin decisions on PENDING bookings", () => {
     expect((await decide(res.body.id, "approve")).status).toBe(409);
   });
 
+  // Impact analysis risk V5: whichever lands first wins and the other gets
+  // 409, so the result is always a state the state machine allows.
+  it("owner cancel racing an admin reject: exactly one applies, no contradictory state", async () => {
+    for (let round = 0; round < 10; round++) {
+      const id = await requestHall("student-1", round);
+
+      const [cancelled, rejected] = await Promise.all([
+        request(server).delete(`/api/bookings/${id}`).set(as("student-1")),
+        decide(id, "reject"),
+      ]);
+
+      expect([cancelled.status, rejected.status].sort(), `round ${round}`).toEqual([200, 409]);
+      const booking = await stored(id);
+      expect(
+        [
+          { status: BookingStatus.CANCELLED, decision: null },
+          { status: BookingStatus.REJECTED, decision: BookingDecision.REJECTED },
+        ],
+        `round ${round}`,
+      ).toContainEqual({ status: booking?.status, decision: booking?.decision });
+    }
+  });
+
   it("deciding on a request withdrawn by its owner is a 409", async () => {
     const id = await requestHall();
     await request(server).delete(`/api/bookings/${id}`).set(as("student-1"));
