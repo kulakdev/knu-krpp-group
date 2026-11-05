@@ -1,9 +1,9 @@
+import { AppHeader } from "@/app/components/app-header";
 import { EquipmentFilter } from "@/app/components/equipment-filter";
 import { IntervalPicker } from "@/app/components/interval-picker";
 import { MyBookingsCard } from "@/app/components/my-bookings-card";
 import { Notice } from "@/app/components/notice";
 import { RoomsTable } from "@/app/components/rooms-table";
-import { UserSwitcher } from "@/app/components/user-switcher";
 import {
   Card,
   CardContent,
@@ -19,15 +19,7 @@ import {
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-4xl space-y-6 p-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">University Room Booking</h1>
-          <p className="text-sm text-muted-foreground">
-            Times are shown in Europe/Kyiv.
-          </p>
-        </div>
-        <UserSwitcher />
-      </header>
+      <AppHeader current="/" />
 
       <Notice />
 

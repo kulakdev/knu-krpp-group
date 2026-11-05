@@ -43,11 +43,17 @@ export function RoomsTable() {
     createBooking.mutate(
       { roomId: room.id, ...interval },
       {
-        onSuccess: (booking) =>
+        onSuccess: (booking) => {
+          const when = `${formatKyiv(booking.startTime)}–${formatKyivTime(booking.endTime)}`;
           setNotice({
             kind: "success",
-            text: `Booked ${room.name}, ${formatKyiv(booking.startTime)}–${formatKyivTime(booking.endTime)}.`,
-          }),
+            // v2.0: large rooms are requested, not booked, until approved.
+            text:
+              booking.status === "PENDING"
+                ? `Requested ${room.name}, ${when} — waiting for admin approval.`
+                : `Booked ${room.name}, ${when}.`,
+          });
+        },
         onError: (error) =>
           setNotice({ kind: "error", error: errorView(error) }),
       },
