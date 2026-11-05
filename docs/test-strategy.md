@@ -13,6 +13,11 @@ may be reported as a supporting metric but does not replace these scenarios.
 | Integration | Two parallel requests, one slot: exactly one 201 | Race condition double-booking | QA (BOOK-15) |
 | E2E (API) | create -> list -> cancel -> slot free | Broken main user path | QA (BOOK-16) |
 | Access | Non-owner cancel -> 403, booking unchanged | Privilege escalation (QR-1) | QA (BOOK-16) |
+| Characterisation (v2.0) | v1.0 behaviour pinned before the change (`v1-characterisation.test.ts`) | Modification breaks base behavior | BOOK-30 |
+| Integration (v2.0) | Large room -> PENDING, PENDING blocks the slot, owner withdraws | Approval rule wrong or slot not reserved | BOOK-32 |
+| Access (v2.0) | Student approve/reject/queue -> 403, booking unchanged | Privilege escalation | BOOK-33 |
+| Integration (v2.0) | Repeated and concurrent decisions -> one applies, no contradictory state | Lost update on the decision | BOOK-33 |
+| Migration (v2.0) | `npm run data:check` equal before/after `migrate deploy` on v1.0 data | Data loss or retroactive approval | BOOK-31 |
 | Regression (v2.0) | All v1.0 tests green after approval workflow lands | Modification breaks base behavior | QA |
 
 Rules:

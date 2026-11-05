@@ -6,8 +6,7 @@ the same room are impossible; v2.0 adds admin approval for large rooms.
 
 **Confluence home:** https://knu-team-qhkppj1p.atlassian.net/wiki/spaces/SD/overview
 (entry point for all project materials)
-**Jira project:** https://knu-team-qhkppj1p.atlassian.net/jira/software/projects/KAN/boards
-(key is being renamed `KAN` -> `BOOK`; issue numbers stay the same)
+**Jira project:** https://knu-team-qhkppj1p.atlassian.net/jira/software/projects/BOOK/boards
 
 ## Stack
 
@@ -33,6 +32,9 @@ npm run dev            # http://localhost:3000
 
 Seeded identities (use as `x-user-id` / in the UI switcher):
 `student-1`, `student-2`, `admin-1`.
+
+Pages: `/` — rooms, booking and "My bookings"; `/admin` (v2.0) — the admin
+reviews requests for rooms with more than 100 seats (`hall-main`).
 
 ## Everyday commands
 
