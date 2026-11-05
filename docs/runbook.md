@@ -44,7 +44,9 @@ npm run dev                    # or: node .next/standalone/server.js for the pac
 BASE_URL=http://localhost:3000 scripts/smoke.sh
 ```
 
-Exercises health -> create -> list -> cancel and must print `SMOKE OK`.
+Exercises health -> create -> list -> cancel, then the v2.0 approval path
+(large-room request -> PENDING -> admin approves -> ACTIVE -> cancel) and
+must print `SMOKE OK`.
 
 ## Performance check (QR-3)
 
@@ -81,6 +83,34 @@ backup and after the restore (or a migration) and compare the output.
    across schema versions; a rollback that requires data transformation is
    NOT safe and must not be promised).
 4. Start: `node .next/standalone/server.js`; run `scripts/smoke.sh`.
+
+## v2.0 migration and rollback limits (BOOK-23)
+
+Upgrading v1.0 -> v2.0:
+
+1. `scripts/backup.sh` and `npm run data:check` — keep both outputs.
+2. Deploy the v2.0 artifact, `npx prisma migrate deploy` (applies
+   `room_equipment` and `approval_workflow`: new enum values and nullable
+   columns only — no existing row is rewritten).
+3. `npm run data:check` again: counts, statuses and the key-fields
+   fingerprint must equal step 1; no v1.0 booking gets a decision
+   (no retroactive approval).
+4. `scripts/smoke.sh` — includes the approval path.
+
+Compatibility of the v1.0 build with v2.0 data — **rollback is limited**:
+
+- The v1.0 code does not know `PENDING` / `REJECTED`. Once any booking is in
+  one of these statuses, the v1.0 client fails to read it, and v1.0 treats
+  only `ACTIVE` as blocking, so a pending request would stop reserving its
+  slot. Rolling back the code alone is therefore **not safe** after the
+  first large-room request.
+- Rolling back the schema would require converting `PENDING` / `REJECTED`
+  rows — a data transformation that loses the approval history. It is not
+  offered.
+- Supported rollback: restore the backup from step 1
+  (`scripts/restore.sh`) together with the v1.0 artifact. Bookings created
+  after the upgrade are lost and must be re-entered; announce that before
+  rolling back.
 
 ## Incident drill quick reference (lab section 8.3)
 
