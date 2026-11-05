@@ -68,6 +68,9 @@ scripts/restore.sh backups/<file>.sql  # restores + prints record counts
 ```
 
 After restore, verify: users=3, rooms=3, bookings=<pre-backup count>.
+`npm run data:check` prints the counts, bookings per status, a fingerprint of
+the key booking fields and the no-overlap invariant — run it before the
+backup and after the restore (or a migration) and compare the output.
 
 ## Rollback to a previous release
 

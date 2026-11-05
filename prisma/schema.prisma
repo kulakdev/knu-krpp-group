@@ -1,6 +1,7 @@
-// University Room Booking System — v1.0 data model
-// v2.0 note: BookingStatus gains PENDING and REJECTED for the admin
-// approval workflow (rooms with capacity > 100). See confluence/adr-001.
+// University Room Booking System — v2.0 data model
+// v2.0 (BOOK-23): BookingStatus gains PENDING and REJECTED for the admin
+// approval workflow (rooms with capacity > 100); the admin decision is
+// recorded on the booking. See confluence/adr-001.
 
 generator client {
   provider = "prisma-client-js"
@@ -25,13 +26,24 @@ enum Equipment {
 enum BookingStatus {
   ACTIVE
   CANCELLED
+  PENDING
+  REJECTED
+}
+
+// Result of the admin decision on a PENDING booking (BOOK-23). Kept apart
+// from the status, which can still change later (an approved booking can
+// be cancelled by its owner).
+enum BookingDecision {
+  APPROVED
+  REJECTED
 }
 
 model User {
-  id       String    @id
-  name     String
-  role     Role
-  bookings Booking[]
+  id        String    @id
+  name      String
+  role      Role
+  bookings  Booking[] @relation("BookingOwner")
+  decisions Booking[] @relation("BookingDecider")
 }
 
 model Room {
@@ -51,8 +63,15 @@ model Booking {
   status    BookingStatus @default(ACTIVE)
   createdAt DateTime      @default(now())
 
-  room Room @relation(fields: [roomId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  // Admin decision (author, time, result); null for bookings that never
+  // needed approval, including every v1.0 record.
+  decision    BookingDecision?
+  decidedById String?
+  decidedAt   DateTime?
+
+  room      Room  @relation(fields: [roomId], references: [id])
+  user      User  @relation("BookingOwner", fields: [userId], references: [id])
+  decidedBy User? @relation("BookingDecider", fields: [decidedById], references: [id])
 
   @@index([roomId, startTime, endTime])
   @@index([userId])
