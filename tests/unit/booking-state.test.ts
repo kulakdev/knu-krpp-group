@@ -4,6 +4,7 @@ import {
   assertTransition,
   BLOCKING_STATUSES,
   canTransition,
+  initialStatus,
 } from "@/lib/booking-state";
 import { InvalidTransitionError } from "@/lib/errors";
 
@@ -54,7 +55,42 @@ describe("assertTransition", () => {
 });
 
 describe("BLOCKING_STATUSES", () => {
-  it("contains only ACTIVE in v1.0", () => {
-    expect(BLOCKING_STATUSES).toEqual([BookingStatus.ACTIVE]);
+  it("contains ACTIVE and PENDING in v2.0", () => {
+    expect(BLOCKING_STATUSES).toEqual([
+      BookingStatus.ACTIVE,
+      BookingStatus.PENDING,
+    ]);
+  });
+});
+
+describe("v2.0 approval transitions", () => {
+  it.each([
+    [BookingStatus.PENDING, BookingStatus.ACTIVE],
+    [BookingStatus.PENDING, BookingStatus.REJECTED],
+    [BookingStatus.PENDING, BookingStatus.CANCELLED],
+  ])("allows %s -> %s", (from, to) => {
+    expect(canTransition(from, to)).toBe(true);
+  });
+
+  it.each([
+    [BookingStatus.REJECTED, BookingStatus.ACTIVE],
+    [BookingStatus.REJECTED, BookingStatus.PENDING],
+    [BookingStatus.REJECTED, BookingStatus.CANCELLED],
+    [BookingStatus.ACTIVE, BookingStatus.PENDING],
+    [BookingStatus.ACTIVE, BookingStatus.REJECTED],
+    [BookingStatus.CANCELLED, BookingStatus.PENDING],
+  ])("forbids %s -> %s", (from, to) => {
+    expect(canTransition(from, to)).toBe(false);
+  });
+});
+
+describe("initialStatus", () => {
+  it.each([
+    [30, BookingStatus.ACTIVE],
+    [100, BookingStatus.ACTIVE],
+    [101, BookingStatus.PENDING],
+    [150, BookingStatus.PENDING],
+  ])("capacity %i starts as %s", (capacity, status) => {
+    expect(initialStatus({ capacity })).toBe(status);
   });
 });
