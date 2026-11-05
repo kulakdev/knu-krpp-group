@@ -15,6 +15,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "data:check": "tsx scripts/data-check.ts",
     "perf:availability": "tsx scripts/perf-availability.ts"
   },
   "dependencies": {

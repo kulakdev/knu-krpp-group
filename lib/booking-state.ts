@@ -19,6 +19,10 @@ import { InvalidTransitionError } from "@/lib/errors";
 const TRANSITIONS: Readonly<Record<BookingStatus, readonly BookingStatus[]>> = {
   ACTIVE: ["CANCELLED"],
   CANCELLED: [],
+  // v2.0 statuses exist in the schema (BOOK-31); no booking reaches them
+  // until the approval rule (BOOK-32) fills in their transitions.
+  PENDING: [],
+  REJECTED: [],
 };
 
 /**
