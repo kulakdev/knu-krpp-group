@@ -1,3 +1,4 @@
+import { EquipmentFilter } from "@/app/components/equipment-filter";
 import { IntervalPicker } from "@/app/components/interval-picker";
 import { MyBookingsCard } from "@/app/components/my-bookings-card";
 import { Notice } from "@/app/components/notice";
@@ -34,11 +35,12 @@ export default function Home() {
         <CardHeader>
           <CardTitle>Rooms</CardTitle>
           <CardDescription>
-            Pick an interval to see which rooms are free.
+            Pick an interval and equipment to see which rooms are free.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <IntervalPicker />
+          <EquipmentFilter />
           <RoomsTable />
         </CardContent>
       </Card>

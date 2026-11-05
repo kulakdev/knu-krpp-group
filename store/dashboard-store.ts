@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Interval } from "@/api-client/rooms";
+import type { Equipment, Interval } from "@/api-client/rooms";
 import type { ApiErrorView } from "@/lib/api-error";
 import { kyivToday, kyivToUtcIso } from "@/lib/kyiv-time";
 
@@ -8,17 +8,20 @@ export type Notice =
   | { kind: "error"; error: ApiErrorView };
 
 /**
- * Dashboard UI state shared by sibling blocks: the Kyiv-time interval the
- * picker edits and the rooms table queries, and the last action's notice.
+ * Dashboard UI state shared by sibling blocks: the Kyiv-time interval and
+ * equipment filter the pickers edit and the rooms table queries, and the
+ * last action's notice.
  */
 interface DashboardStore {
   date: string;
   startTime: string;
   endTime: string;
+  equipment: Equipment[];
   notice: Notice | null;
   setDate: (date: string) => void;
   setStartTime: (time: string) => void;
   setEndTime: (time: string) => void;
+  setEquipment: (equipment: Equipment[]) => void;
   setNotice: (notice: Notice | null) => void;
 }
 
@@ -26,10 +29,12 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
   date: kyivToday(new Date()),
   startTime: "10:00",
   endTime: "11:00",
+  equipment: [],
   notice: null,
   setDate: (date) => set({ date }),
   setStartTime: (startTime) => set({ startTime }),
   setEndTime: (endTime) => set({ endTime }),
+  setEquipment: (equipment) => set({ equipment }),
   setNotice: (notice) => set({ notice }),
 }));
 
