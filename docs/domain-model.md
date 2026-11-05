@@ -16,6 +16,7 @@ erDiagram
         string id PK "seeded: room-101, room-102, hall-main"
         string name
         int    capacity
+        Equipment[] equipment "PROJECTOR | COMPUTERS | WHITEBOARD"
     }
     BOOKING {
         string id PK "cuid"
@@ -27,6 +28,12 @@ erDiagram
         datetime createdAt
     }
 ```
+
+## Room equipment (BOOK-22)
+
+Seeded: `room-101` projector + whiteboard, `room-102` computers + projector,
+`hall-main` projector + whiteboard. Users filter rooms by it; it does not
+affect booking rules.
 
 ## Business invariants
 

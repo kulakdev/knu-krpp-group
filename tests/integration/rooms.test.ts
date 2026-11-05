@@ -56,9 +56,24 @@ describe("GET /api/rooms", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.rooms).toEqual([
-      { id: "hall-main", name: "Grand Conference Hall", capacity: 150 },
-      { id: "room-101", name: "Auditorium 101", capacity: 30 },
-      { id: "room-102", name: "Auditorium 102", capacity: 50 },
+      {
+        id: "hall-main",
+        name: "Grand Conference Hall",
+        capacity: 150,
+        equipment: ["PROJECTOR", "WHITEBOARD"],
+      },
+      {
+        id: "room-101",
+        name: "Auditorium 101",
+        capacity: 30,
+        equipment: ["PROJECTOR", "WHITEBOARD"],
+      },
+      {
+        id: "room-102",
+        name: "Auditorium 102",
+        capacity: 50,
+        equipment: ["COMPUTERS", "PROJECTOR"],
+      },
     ]);
   });
 

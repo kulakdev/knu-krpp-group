@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { Equipment, PrismaClient, Role } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const prisma = new PrismaClient({
@@ -12,9 +12,24 @@ const users = [
 ];
 
 const rooms = [
-  { id: "room-101", name: "Auditorium 101", capacity: 30 },
-  { id: "room-102", name: "Auditorium 102", capacity: 50 },
-  { id: "hall-main", name: "Grand Conference Hall", capacity: 150 },
+  {
+    id: "room-101",
+    name: "Auditorium 101",
+    capacity: 30,
+    equipment: [Equipment.PROJECTOR, Equipment.WHITEBOARD],
+  },
+  {
+    id: "room-102",
+    name: "Auditorium 102",
+    capacity: 50,
+    equipment: [Equipment.COMPUTERS, Equipment.PROJECTOR],
+  },
+  {
+    id: "hall-main",
+    name: "Grand Conference Hall",
+    capacity: 150,
+    equipment: [Equipment.PROJECTOR, Equipment.WHITEBOARD],
+  },
 ];
 
 async function main() {
@@ -29,7 +44,11 @@ async function main() {
   for (const room of rooms) {
     await prisma.room.upsert({
       where: { id: room.id },
-      update: { name: room.name, capacity: room.capacity },
+      update: {
+        name: room.name,
+        capacity: room.capacity,
+        equipment: room.equipment,
+      },
       create: room,
     });
   }

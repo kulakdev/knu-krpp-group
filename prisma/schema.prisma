@@ -15,6 +15,13 @@ enum Role {
   ADMIN
 }
 
+// Room features users can filter by (BOOK-22).
+enum Equipment {
+  PROJECTOR
+  COMPUTERS
+  WHITEBOARD
+}
+
 enum BookingStatus {
   ACTIVE
   CANCELLED
@@ -28,10 +35,11 @@ model User {
 }
 
 model Room {
-  id       String    @id
-  name     String
-  capacity Int
-  bookings Booking[]
+  id        String      @id
+  name      String
+  capacity  Int
+  equipment Equipment[] @default([])
+  bookings  Booking[]
 }
 
 model Booking {
