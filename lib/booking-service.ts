@@ -100,7 +100,9 @@ export async function listBookingsForUser(
  * the UI (lab section 2.2):
  *  - unknown booking -> NotFoundError;
  *  - actor is not the owner -> ForbiddenError (403), booking unchanged;
- *  - already CANCELLED -> idempotent no-op, returns the current record.
+ *  - already CANCELLED -> idempotent no-op, returns the current record;
+ *  - ACTIVE or PENDING (v2.0: the owner withdraws a request) -> CANCELLED;
+ *  - REJECTED -> InvalidTransitionError (409): nothing left to cancel.
  */
 export async function cancelBooking(
   bookingId: string,

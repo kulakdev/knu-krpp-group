@@ -1,4 +1,4 @@
-# Domain model (v1.0)
+# Domain model (v2.0)
 
 ## Entities
 
@@ -24,8 +24,11 @@ erDiagram
         string userId FK
         datetime startTime "UTC"
         datetime endTime "UTC"
-        BookingStatus status "ACTIVE | CANCELLED"
+        BookingStatus status "ACTIVE | CANCELLED | PENDING | REJECTED"
         datetime createdAt
+        BookingDecision decision "APPROVED | REJECTED, null if never decided"
+        string decidedById FK "admin who decided"
+        datetime decidedAt "UTC"
     }
 ```
 
@@ -41,9 +44,12 @@ affect booking rules.
 - **No overlap:** for one room, no two bookings in a *blocking* status may
   have overlapping intervals. Intervals use `[start, end)` semantics:
   adjacency is allowed, partial/full overlap is forbidden.
-- **Blocking statuses (v1.0):** `{ACTIVE}`. Defined in exactly one place:
-  `BLOCKING_STATUSES` in `lib/booking-state.ts`.
-- **Ownership:** only the owner may cancel a booking (server-enforced).
+- **Blocking statuses:** v1.0 `{ACTIVE}`, v2.0 `{ACTIVE, PENDING}`. Defined
+  in exactly one place: `BLOCKING_STATUSES` in `lib/booking-state.ts`.
+- **Approval (v2.0):** a booking of a room with capacity > 100 starts as
+  `PENDING`; smaller rooms keep the v1.0 behaviour (immediately `ACTIVE`).
+- **Ownership:** only the owner may cancel a booking, including withdrawing
+  a `PENDING` request (server-enforced).
 
 ## Booking state machine — v1.0
 
@@ -54,7 +60,7 @@ stateDiagram-v2
     CANCELLED --> [*]
 ```
 
-## Booking state machine — v2.0 (planned, lab section 10)
+## Booking state machine — v2.0 (lab section 10, `lib/booking-state.ts`)
 
 ```mermaid
 stateDiagram-v2

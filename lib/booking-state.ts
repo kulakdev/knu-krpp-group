@@ -2,44 +2,41 @@ import type { BookingStatus } from "@prisma/client";
 import { InvalidTransitionError } from "@/lib/errors";
 
 /**
- * Booking state machine — v1.0.
+ * Booking state machine — v2.0 (BOOK-23, lab section 10.1).
  *
- *   ACTIVE --cancel--> CANCELLED (terminal)
+ *   create (capacity <= 100) -> ACTIVE
+ *   create (capacity  > 100) -> PENDING
+ *   ACTIVE  --cancel (owner)-->  CANCELLED (terminal)
+ *   PENDING --approve (admin)--> ACTIVE
+ *   PENDING --reject (admin)-->  REJECTED (terminal)
+ *   PENDING --cancel (owner)-->  CANCELLED
  *
- * v2.0 (admin approval for rooms with capacity > 100) extends this table
- * only — no call-site changes:
- *   PENDING --approve--> ACTIVE
- *   PENDING --reject--> REJECTED (terminal)
- *   PENDING --cancel--> CANCELLED
- * and BLOCKING_STATUSES gains "PENDING" so a pending request still reserves
- * its slot (lab section 10.1).
+ * Who may trigger a transition is checked in lib/booking-service.ts; this
+ * module only knows which transitions exist.
  */
+
+/** Rooms above this capacity need admin approval (lab section 10.1). */
+export const APPROVAL_CAPACITY_THRESHOLD = 100;
 
 // Allowed transitions per source status; a status with no targets is terminal.
 const TRANSITIONS: Readonly<Record<BookingStatus, readonly BookingStatus[]>> = {
   ACTIVE: ["CANCELLED"],
+  PENDING: ["ACTIVE", "REJECTED", "CANCELLED"],
   CANCELLED: [],
-  // v2.0 statuses exist in the schema (BOOK-31); no booking reaches them
-  // until the approval rule (BOOK-32) fills in their transitions.
-  PENDING: [],
   REJECTED: [],
 };
 
 /**
- * Statuses that reserve a slot and block overlapping bookings.
- * The overlap query in lib/booking-service.ts must read this set — never
- * hardcode "ACTIVE" there (v2.0 adds PENDING here in exactly one place).
+ * Statuses that reserve a slot and block overlapping bookings: a pending
+ * request holds its slot until it is rejected or cancelled. The overlap
+ * query in lib/booking-service.ts must read this set — never hardcode
+ * statuses there.
  */
-export const BLOCKING_STATUSES: readonly BookingStatus[] = ["ACTIVE"];
+export const BLOCKING_STATUSES: readonly BookingStatus[] = ["ACTIVE", "PENDING"];
 
-/**
- * The status a new booking starts in. v1.0: always ACTIVE. Kept next to the
- * transition table so the v2.0 approval rule (capacity > 100 -> PENDING)
- * changes only this module, not createBooking.
- */
+/** The status a new booking starts in: large rooms wait for approval. */
 export function initialStatus(room: { capacity: number }): BookingStatus {
-  void room;
-  return "ACTIVE";
+  return room.capacity > APPROVAL_CAPACITY_THRESHOLD ? "PENDING" : "ACTIVE";
 }
 
 export function canTransition(
