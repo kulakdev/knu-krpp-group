@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Equipment } from "@prisma/client";
 import { AppError, ValidationError } from "@/lib/errors";
 import { logOperation } from "@/lib/logger";
 
@@ -84,6 +85,32 @@ function log(
     durationMs: Date.now() - startedAt,
     error: error?.message,
   });
+}
+
+const EQUIPMENT_BY_NAME: Record<string, Equipment> = {
+  projector: Equipment.PROJECTOR,
+  computers: Equipment.COMPUTERS,
+  whiteboard: Equipment.WHITEBOARD,
+};
+
+/**
+ * Parses `equipment=projector,computers` into Equipment values; null means
+ * no filter. An empty or unknown value throws ValidationError (400).
+ */
+export function parseEquipment(value: string | null): Equipment[] | null {
+  if (value === null) return null;
+
+  const names = value.split(",").map((name) => name.trim().toLowerCase());
+  if (names.some((name) => name.length === 0)) {
+    throw new ValidationError("equipment must not contain empty values");
+  }
+  const unknown = names.filter((name) => !(name in EQUIPMENT_BY_NAME));
+  if (unknown.length > 0) {
+    throw new ValidationError(
+      `Unknown equipment: ${unknown.join(", ")} (allowed: ${Object.keys(EQUIPMENT_BY_NAME).join(", ")})`,
+    );
+  }
+  return [...new Set(names.map((name) => EQUIPMENT_BY_NAME[name]))];
 }
 
 /** Parses an ISO-8601 string into a Date or throws ValidationError (400). */

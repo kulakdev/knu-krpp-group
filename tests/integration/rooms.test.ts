@@ -124,3 +124,52 @@ describe("GET /api/rooms", () => {
     expect(res.status).toBe(400);
   });
 });
+
+/**
+ * BOOK-39 — equipment filter (BOOK-22). Seeded equipment: room-101 and
+ * hall-main projector + whiteboard, room-102 computers + projector.
+ */
+describe("GET /api/rooms?equipment", () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  });
+
+  const ids = (rooms: { id: string }[]) => rooms.map((room) => room.id);
+
+  it.each([
+    ["computers", ["room-102"]],
+    ["whiteboard", ["hall-main", "room-101"]],
+    ["projector", ["hall-main", "room-101", "room-102"]],
+    ["projector,computers", ["room-102"]],
+    ["whiteboard,computers", []],
+    [" Whiteboard , PROJECTOR ", ["hall-main", "room-101"]],
+  ])("equipment=%s returns rooms having all of it", async (equipment, expected) => {
+    const res = await request(server).get("/api/rooms").query({ equipment });
+
+    expect(res.status).toBe(200);
+    expect(ids(res.body.rooms)).toEqual(expected);
+  });
+
+  it("combines with the interval and still reports availability", async () => {
+    await seedBooking("room-101", at(10), at(11));
+
+    const res = await request(server)
+      .get("/api/rooms")
+      .query({ equipment: "whiteboard", startTime: at(10), endTime: at(11) });
+
+    expect(availability(res.body.rooms)).toEqual({
+      "hall-main": true,
+      "room-101": false,
+    });
+  });
+
+  it.each([
+    ["unknown value", "laser"],
+    ["empty value", ""],
+    ["empty item", "projector,,computers"],
+  ])("rejects an %s with 400", async (_case, equipment) => {
+    const res = await request(server).get("/api/rooms").query({ equipment });
+
+    expect(res.status).toBe(400);
+  });
+});
