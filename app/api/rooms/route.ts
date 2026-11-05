@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import { apiHandler, parseIsoDateTime } from "@/lib/api";
+import { apiHandler, parseEquipment, parseIsoDateTime } from "@/lib/api";
 import { listRooms } from "@/lib/booking-service";
 import { ValidationError } from "@/lib/errors";
 
 /**
  * GET /api/rooms
- * Optional query: ?startTime=<ISO>&endTime=<ISO>
- * Returns all rooms; with a time filter each room carries isAvailable.
- * 400 when only one time param is given or the interval is invalid.
+ * Optional query: ?startTime=<ISO>&endTime=<ISO>&equipment=projector,computers
+ * Returns all rooms (only those with all listed equipment when filtered);
+ * with a time filter each room carries isAvailable.
+ * 400 when only one time param is given, the interval is invalid, or an
+ * equipment value is empty or unknown.
  */
 export const GET = apiHandler("rooms.list", async (req) => {
   const params = new URL(req.url).searchParams;
@@ -25,7 +27,8 @@ export const GET = apiHandler("rooms.list", async (req) => {
           endTime: parseIsoDateTime(endTime, "endTime"),
         }
       : undefined;
+  const equipment = parseEquipment(params.get("equipment")) ?? [];
 
-  const rooms = await listRooms(filter);
+  const rooms = await listRooms(filter, equipment);
   return NextResponse.json({ rooms });
 });
