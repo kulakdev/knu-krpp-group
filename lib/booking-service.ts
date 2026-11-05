@@ -4,7 +4,7 @@ import {
   NotFoundError,
   ValidationError,
 } from "@/lib/errors";
-import { BookingStatus } from "@prisma/client";
+import { BookingDecision, BookingStatus, Role } from "@prisma/client";
 import type { Booking, Equipment, Room, User } from "@prisma/client";
 import {
   assertTransition,
@@ -27,7 +27,18 @@ export function serializeBooking(booking: BookingWithRoom) {
     endTime: booking.endTime.toISOString(),
     status: booking.status,
     createdAt: booking.createdAt.toISOString(),
+    // v2.0 admin decision (author, time, result); null when never decided.
+    decision: booking.decision,
+    decidedById: booking.decidedById,
+    decidedAt: booking.decidedAt?.toISOString() ?? null,
   };
+}
+
+export type PendingBooking = BookingWithRoom & { user: User };
+
+/** Wire shape of a request in the admin queue: a booking plus its requester. */
+export function serializePendingBooking(booking: PendingBooking) {
+  return { ...serializeBooking(booking), userName: booking.user.name };
 }
 
 /**
@@ -175,4 +186,70 @@ export async function listRooms(
     ...room,
     isAvailable: !busyRoomIds.has(room.id),
   }));
+}
+
+function assertAdmin(actor: User): void {
+  if (actor.role !== Role.ADMIN) {
+    throw new ForbiddenError("Only an administrator can review booking requests");
+  }
+}
+
+/** PENDING requests waiting for an admin decision, earliest slot first. */
+export async function listPendingBookings(
+  actor: User,
+): Promise<PendingBooking[]> {
+  assertAdmin(actor);
+  return prisma.booking.findMany({
+    where: { status: BookingStatus.PENDING },
+    include: { room: true, user: true },
+    orderBy: { startTime: "asc" },
+  });
+}
+
+/**
+ * Records an admin decision on a PENDING booking (v2.0, lab section 10.1):
+ * APPROVED -> ACTIVE, REJECTED -> REJECTED (frees the slot), with author and
+ * time stored on the booking.
+ *  - non-admin -> ForbiddenError (403); unknown booking -> NotFoundError;
+ *  - the same decision again -> idempotent no-op, returns the record;
+ *  - any other non-PENDING state (opposite decision, cancelled by the
+ *    owner, never needed approval) -> ConflictError (409).
+ * The update is conditional on status = PENDING, so two concurrent
+ * decisions cannot both apply.
+ */
+export async function decideBooking(
+  bookingId: string,
+  actor: User,
+  decision: BookingDecision,
+): Promise<BookingWithRoom> {
+  assertAdmin(actor);
+  const target =
+    decision === BookingDecision.APPROVED
+      ? BookingStatus.ACTIVE
+      : BookingStatus.REJECTED;
+  assertTransition(BookingStatus.PENDING, target);
+
+  const { count } = await prisma.booking.updateMany({
+    where: { id: bookingId, status: BookingStatus.PENDING },
+    data: {
+      status: target,
+      decision,
+      decidedById: actor.id,
+      decidedAt: new Date(),
+    },
+  });
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { room: true },
+  });
+  if (!booking) {
+    throw new NotFoundError("Booking not found");
+  }
+  if (count === 0 && booking.decision !== decision) {
+    throw new ConflictError(
+      `Booking is not waiting for a decision (status ${booking.status})`,
+    );
+  }
+  return booking;
 }
