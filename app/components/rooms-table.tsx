@@ -4,6 +4,7 @@ import { useIsMutating } from "@tanstack/react-query";
 import { useCreateBooking } from "@/api-client/bookings";
 import { errorView } from "@/api-client/http";
 import { type RoomDto, useRooms } from "@/api-client/rooms";
+import { EQUIPMENT_LABELS } from "@/app/components/equipment-filter";
 import { ErrorBox } from "@/app/components/error-box";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,14 +21,16 @@ import { useDashboardStore, useInterval } from "@/store/dashboard-store";
 import { useUserStore } from "@/store/user-store";
 
 /**
- * Rooms with availability for the picked interval. Busy rooms cannot be
- * booked from here, but the server re-validates every request (409).
+ * Rooms with availability for the picked interval, narrowed by the
+ * equipment filter. Busy rooms cannot be booked from here, but the server
+ * re-validates every request (409).
  */
 export function RoomsTable() {
   const interval = useInterval();
+  const equipment = useDashboardStore((state) => state.equipment);
   const userId = useUserStore((state) => state.userId);
   const setNotice = useDashboardStore((state) => state.setNotice);
-  const rooms = useRooms(interval);
+  const rooms = useRooms(interval, equipment);
   const createBooking = useCreateBooking(userId);
   const actionInFlight = useIsMutating() > 0;
 
@@ -57,6 +60,7 @@ export function RoomsTable() {
         <TableRow>
           <TableHead>Room</TableHead>
           <TableHead>Capacity</TableHead>
+          <TableHead>Equipment</TableHead>
           <TableHead>Availability</TableHead>
           <TableHead />
         </TableRow>
@@ -66,6 +70,15 @@ export function RoomsTable() {
           <TableRow key={room.id}>
             <TableCell className="font-medium">{room.name}</TableCell>
             <TableCell>{room.capacity}</TableCell>
+            <TableCell>
+              <div className="flex flex-wrap gap-1">
+                {room.equipment.map((item) => (
+                  <Badge key={item} variant="secondary">
+                    {EQUIPMENT_LABELS[item]}
+                  </Badge>
+                ))}
+              </div>
+            </TableCell>
             <TableCell>
               {room.isAvailable === undefined ? (
                 <span className="text-muted-foreground">—</span>
