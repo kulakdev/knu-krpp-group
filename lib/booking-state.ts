@@ -28,6 +28,16 @@ const TRANSITIONS: Readonly<Record<BookingStatus, readonly BookingStatus[]>> = {
  */
 export const BLOCKING_STATUSES: readonly BookingStatus[] = ["ACTIVE"];
 
+/**
+ * The status a new booking starts in. v1.0: always ACTIVE. Kept next to the
+ * transition table so the v2.0 approval rule (capacity > 100 -> PENDING)
+ * changes only this module, not createBooking.
+ */
+export function initialStatus(room: { capacity: number }): BookingStatus {
+  void room;
+  return "ACTIVE";
+}
+
 export function canTransition(
   from: BookingStatus,
   to: BookingStatus,

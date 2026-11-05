@@ -6,7 +6,11 @@ import {
 } from "@/lib/errors";
 import { BookingStatus } from "@prisma/client";
 import type { Booking, Equipment, Room, User } from "@prisma/client";
-import { assertTransition, BLOCKING_STATUSES } from "@/lib/booking-state";
+import {
+  assertTransition,
+  BLOCKING_STATUSES,
+  initialStatus,
+} from "@/lib/booking-state";
 import { isValidInterval } from "@/lib/intervals";
 import { prisma } from "@/lib/prisma";
 
@@ -48,10 +52,10 @@ export async function createBooking(input: {
   }
 
   return prisma.$transaction(async (tx) => {
-    const lockedRooms = await tx.$queryRaw<{ id: string }[]>`
-      SELECT id FROM "Room" WHERE id = ${roomId} FOR UPDATE
+    const [room] = await tx.$queryRaw<{ id: string; capacity: number }[]>`
+      SELECT id, capacity FROM "Room" WHERE id = ${roomId} FOR UPDATE
     `;
-    if (lockedRooms.length === 0) {
+    if (!room) {
       throw new NotFoundError("Room not found");
     }
 
@@ -71,7 +75,7 @@ export async function createBooking(input: {
     }
 
     return tx.booking.create({
-      data: { userId, roomId, startTime, endTime },
+      data: { userId, roomId, startTime, endTime, status: initialStatus(room) },
       include: { room: true },
     });
   });
