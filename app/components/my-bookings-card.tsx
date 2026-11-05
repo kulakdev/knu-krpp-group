@@ -7,8 +7,8 @@ import {
   useMyBookings,
 } from "@/api-client/bookings";
 import { errorView } from "@/api-client/http";
+import { BookingStatusBadge } from "@/app/components/booking-status-badge";
 import { ErrorBox } from "@/app/components/error-box";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,9 +27,22 @@ import {
 } from "@/components/ui/table";
 import { formatKyiv, formatKyivTime } from "@/lib/kyiv-time";
 import { useDashboardStore } from "@/store/dashboard-store";
-import { useCurrentUser } from "@/store/user-store";
+import { MOCK_USERS, useCurrentUser } from "@/store/user-store";
 
-/** The current mock user's bookings with status and Cancel. */
+// PENDING requests can be withdrawn by their owner (v2.0).
+const CANCELLABLE: BookingDto["status"][] = ["ACTIVE", "PENDING"];
+
+/** "Approved by Admin User, 07.01.2030 12:30" — author and time of the decision. */
+function decisionText(booking: BookingDto): string | null {
+  if (!booking.decision || !booking.decidedAt) return null;
+  const admin =
+    MOCK_USERS.find((user) => user.id === booking.decidedById)?.name ??
+    booking.decidedById;
+  const verb = booking.decision === "APPROVED" ? "Approved" : "Rejected";
+  return `${verb} by ${admin}, ${formatKyiv(booking.decidedAt)}`;
+}
+
+/** The current mock user's bookings with status, admin decision and Cancel. */
 export function MyBookingsCard() {
   const user = useCurrentUser();
   const setNotice = useDashboardStore((state) => state.setNotice);
@@ -81,16 +94,22 @@ export function MyBookingsCard() {
                     {formatKyivTime(booking.endTime)}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        booking.status === "ACTIVE" ? "default" : "secondary"
-                      }
-                    >
-                      {booking.status}
-                    </Badge>
+                    <div className="space-y-1">
+                      <BookingStatusBadge status={booking.status} />
+                      {decisionText(booking) && (
+                        <p className="text-xs text-muted-foreground">
+                          {decisionText(booking)}
+                        </p>
+                      )}
+                      {booking.status === "PENDING" && (
+                        <p className="text-xs text-muted-foreground">
+                          Waiting for admin approval
+                        </p>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    {booking.status === "ACTIVE" && (
+                    {CANCELLABLE.includes(booking.status) && (
                       <Button
                         size="sm"
                         variant="destructive"
