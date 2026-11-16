@@ -42,5 +42,6 @@ member's machine; the agent ran the commands, a person read the results.
 | 2026-11-16 | Danylo Filatov | Claude Code (Opus 5.5) + Atlassian MCP | Incident drill guides (BOOK-43); 503 for an unreachable database (BOOK-44) and error details in the operation log (BOOK-45), including the merge-conflict resolution; Confluence "1. Team Work": merge-conflict record and contribution table drafted from Jira / Git | Danylo Filatov |
 | 2026-11-16 | Danylo Filatov | Claude Code (Opus 5.5) | Training incident, facilitator: preparation, fault injection, timeline (BOOK-43) | Danylo Filatov |
 | 2026-11-16 | Kostiantyn Kulak | Claude Code | Training incident, responder: diagnosis, recovery, post-recovery checks, messages (BOOK-43) | Kostiantyn Kulak |
+| 2026-11-16 | Danylo Filatov | Claude Code (Opus 5.5) | Post-merge code review of PR #27 (BOOK-41): reproduction of the concurrent double-cancel bug, fix with a test (BOOK-50) | Danylo Filatov |
 
 <!-- Append one row per meaningful usage. Sprint-level granularity is fine. -->
