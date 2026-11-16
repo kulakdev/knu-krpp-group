@@ -53,9 +53,11 @@ runbook»).
 Що мав би знайти й зробити черговий:
 
 1. **Симптоми:** `GET /api/health` → 503 `{"database":"down"}`;
-   в інтерфейсі «Technical failure» з request id; у
-   `drill-server.log` — помилки Prisma про недоступну базу;
-   `npm run ops:report -- drill-server.log` → `ALERT: health 503`.
+   інші запити → 503 `{"error":"Database unavailable","requestId":…}`
+   (BOOK-44); в інтерфейсі «Technical failure» (HTTP 503) з request id;
+   у `drill-server.log` рядок операції з цим `requestId` містить
+   `"errorCode":"ECONNREFUSED"` (BOOK-45);
+   `npm run ops:report -- drill-server.log` → `ALERT`.
 2. **Причина:** контейнер `booking-db` зупинено (`docker ps -a` →
    `Exited`); процес застосунку при цьому живий.
 3. **Відновлення:** `docker compose start db`, дочекатися healthy.
