@@ -42,7 +42,8 @@ applied, reviewed and merged by Kostiantyn.
 | 2026-10-30 – 2026-11-03 | Danylo Filatov → Kostiantyn Kulak | Claude Code (Opus 5.5) | Code and tests generated as `git apply` patches: BOOK-6, 7, 9, 14 | Kostiantyn Kulak (applied, reviewed, merged — PRs #3, #11, #12) |
 | 2026-11-03 | Danylo Filatov | Claude Code (Opus 5.5) | v2.0 impact analysis and ADR-001 review draft (BOOK-29); risk V5 found in this review | Danylo Filatov |
 | 2026-11-03 | Danylo Filatov → Kostiantyn Kulak | Claude Code (Opus 5.5) | Code, tests, migrations and docs generated as a chain of `git apply` patches: BOOK-38, 39, 40 (extra story BOOK-22) and BOOK-30..35 (v2.0) | Kostiantyn Kulak (applied, reviewed, merged — PRs #19–#26, #28, #29) |
-| 2026-11-05 | Kostiantyn Kulak | AI coding agent — *tool: to be filled in by Kostiantyn* | Fix for BOOK-41 from a problem description written with Claude Code | Kostiantyn Kulak (PR #27) |
+| 2026-11-05 | Kostiantyn Kulak | Claude | Fix for BOOK-41 from a problem description written with Claude Code | Kostiantyn Kulak (PR #27) |
 | 2026-11-16 | Danylo Filatov | Claude Code (Opus 5.5) | Release checks: smoke on the v2.0 production build, official QR-3 run (BOOK-28); this log | Danylo Filatov |
+| 2026-11-16 | Danylo Filatov | Claude Code (Opus 5.5) + Atlassian MCP | Incident drill guides (BOOK-43); 503 for an unreachable database (BOOK-44) and error details in the operation log (BOOK-45), including the merge-conflict resolution; Confluence "1. Team Work": merge-conflict record and contribution table drafted from Jira / Git | Danylo Filatov |
 
 <!-- Append one row per meaningful usage. Sprint-level granularity is fine. -->
