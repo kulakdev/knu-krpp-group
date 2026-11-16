@@ -117,5 +117,9 @@ Compatibility of the v1.0 build with v2.0 data — **rollback is limited**:
 - Fault injection (facilitator only): `scripts/break-db.sh`
 - Recovery: `docker compose start db`, then health probe + smoke + booking
   count verification.
-- Full drill plan, roles, and timeline template: Confluence "Ризики та
-  інцидент" section.
+- Facilitator steps (break / reference fix / review):
+  [`incident-drill-facilitator.md`](incident-drill-facilitator.md) — not
+  shown to the responder before the drill ends.
+- Responder checklist: [`incident-drill-responder.md`](incident-drill-responder.md).
+- Results (roles, timeline, review, corrective actions): Confluence
+  "5. Risks & Incident".
