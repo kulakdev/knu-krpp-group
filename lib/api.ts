@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Equipment } from "@prisma/client";
 import { AppError, ValidationError } from "@/lib/errors";
-import { logOperation } from "@/lib/logger";
+import { logOperation, type OperationLogEntry } from "@/lib/logger";
 
 type RouteContext = { params: Promise<Record<string, string>> };
 type Handler<C extends RouteContext = RouteContext> = (
@@ -45,20 +45,40 @@ export function apiHandler<C extends RouteContext = RouteContext>(
       log(req, op, requestId, "ok", statusCode, startedAt);
       return res;
     } catch (error) {
-      const appError =
-        error instanceof AppError
-          ? error
-          : new AppError("Internal server error", 500);
+      const appError = toAppError(error);
       statusCode = appError.statusCode;
-      if (!(error instanceof AppError)) {
-        console.error(error);
+      const cause = error === appError ? undefined : error;
+      if (cause !== undefined) {
+        // Stack trace of a technical failure, tied to its operation log line.
+        console.error(`requestId=${requestId}`, cause);
       }
-      log(req, op, requestId, "error", statusCode, startedAt, appError);
+      log(req, op, requestId, "error", statusCode, startedAt, appError, cause);
       return NextResponse.json(
         { error: appError.message, requestId },
         { status: statusCode, headers: { "x-request-id": requestId } },
       );
     }
+  };
+}
+
+/** Typed errors pass through; anything else is a technical failure (500). */
+function toAppError(error: unknown): AppError {
+  return error instanceof AppError
+    ? error
+    : new AppError("Internal server error", 500);
+}
+
+/** Name and code of the original error behind a technical failure. */
+function describeCause(
+  cause: unknown,
+): Pick<OperationLogEntry, "errorName" | "errorCode"> {
+  if (typeof cause !== "object" || cause === null) {
+    return { errorName: typeof cause };
+  }
+  const { name, code } = cause as { name?: unknown; code?: unknown };
+  return {
+    errorName: typeof name === "string" ? name : undefined,
+    errorCode: typeof code === "string" ? code : undefined,
   };
 }
 
@@ -70,6 +90,7 @@ function log(
   statusCode: number,
   startedAt: number,
   error?: AppError,
+  cause?: unknown,
 ): void {
   logOperation({
     ts: new Date().toISOString(),
@@ -84,6 +105,7 @@ function log(
     statusCode,
     durationMs: Date.now() - startedAt,
     error: error?.message,
+    ...(cause === undefined ? {} : describeCause(cause)),
   });
 }
 
