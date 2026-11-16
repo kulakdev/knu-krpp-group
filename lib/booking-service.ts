@@ -111,7 +111,8 @@ export async function listBookingsForUser(
  * the UI (lab section 2.2):
  *  - unknown booking -> NotFoundError;
  *  - actor is not the owner -> ForbiddenError (403), booking unchanged;
- *  - already CANCELLED -> idempotent no-op, returns the current record;
+ *  - already CANCELLED, also by a concurrent cancel -> idempotent no-op,
+ *    returns the current record;
  *  - ACTIVE or PENDING (v2.0: the owner withdraws a request) -> CANCELLED;
  *  - REJECTED -> InvalidTransitionError (409): nothing left to cancel;
  *  - status changed by a concurrent decision -> ConflictError (409).
@@ -142,13 +143,17 @@ export async function cancelBooking(
     where: { id: bookingId, status: booking.status },
     data: { status: BookingStatus.CANCELLED },
   });
-  if (count === 0) {
-    throw new ConflictError("The booking changed meanwhile; reload and try again");
-  }
-  return prisma.booking.findUniqueOrThrow({
+  const current = await prisma.booking.findUniqueOrThrow({
     where: { id: bookingId },
     include: { room: true },
   });
+  // Nothing matched: either a concurrent cancel by the owner got there
+  // first — idempotent, same as the re-cancel above (BOOK-50) — or an admin
+  // decided in between, which is refused.
+  if (count === 0 && current.status !== BookingStatus.CANCELLED) {
+    throw new ConflictError("The booking changed meanwhile; reload and try again");
+  }
+  return current;
 }
 
 /**

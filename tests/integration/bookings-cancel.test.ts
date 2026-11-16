@@ -121,4 +121,21 @@ describe("DELETE /api/bookings/:id", () => {
     expect(res.body.status).toBe("CANCELLED");
     expect(await statusOf(id)).toBe(BookingStatus.CANCELLED);
   });
+
+  // BOOK-50 — a double click or a retry must stay idempotent even when both
+  // requests read ACTIVE before either of them writes.
+  it("keeps two concurrent cancels by the owner idempotent", async () => {
+    for (let round = 0; round < 10; round++) {
+      await resetDatabase();
+      const id = await seedBooking();
+
+      const [first, second] = await Promise.all([
+        cancelAs(id, "student-1"),
+        cancelAs(id, "student-1"),
+      ]);
+
+      expect([first.status, second.status], `round ${round}`).toEqual([200, 200]);
+      expect(await statusOf(id)).toBe(BookingStatus.CANCELLED);
+    }
+  });
 });
