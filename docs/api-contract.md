@@ -5,6 +5,11 @@ rights (lab section 5). Time format: ISO 8601 UTC on the wire; timestamps
 are displayed in Europe/Kyiv in the UI. Every response carries an
 `x-request-id` header for log correlation.
 
+Any operation may also fail with a technical error, body
+`{ error, requestId }`: **503** `Database unavailable` — the database
+cannot be reached; **500** `Internal server error` — any other unexpected
+failure.
+
 ## GET /api/rooms
 
 - **Auth:** none.
