@@ -34,7 +34,9 @@ describe("operation log for failed requests", () => {
     const lines = captureLog();
 
     const res = await fail(
-      Object.assign(new TypeError("socket hang up"), { code: "ECONNRESET" }),
+      Object.assign(new TypeError("bad argument"), {
+        code: "ERR_INVALID_ARG_TYPE",
+      }),
     );
 
     expect(lines).toHaveLength(1);
@@ -44,7 +46,22 @@ describe("operation log for failed requests", () => {
       statusCode: 500,
       error: "Internal server error",
       errorName: "TypeError",
-      errorCode: "ECONNRESET",
+      errorCode: "ERR_INVALID_ARG_TYPE",
+    });
+  });
+
+  it("records the connection error behind a 503 (BOOK-44)", async () => {
+    const lines = captureLog();
+
+    await fail(
+      Object.assign(new AggregateError([], ""), { code: "ECONNREFUSED" }),
+    );
+
+    expect(lines[0]).toMatchObject({
+      statusCode: 503,
+      error: "Database unavailable",
+      errorName: "AggregateError",
+      errorCode: "ECONNREFUSED",
     });
   });
 
