@@ -36,7 +36,8 @@ npm run dev                    # or: node .next/standalone/server.js for the pac
   windows; only the failure window should be flagged.
 - **Common failure shapes:** 400 validation, 401 mock-auth, 403 ownership,
   404 unknown id, 409 slot conflict — all expected business outcomes, not
-  technical faults. 5xx indicates a real defect or infrastructure issue.
+  technical faults. 503 `Database unavailable` means the database cannot be
+  reached (check the container first); 500 indicates a defect in the code.
 
 ## Smoke check (post-deploy / post-recovery)
 

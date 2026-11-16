@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { Equipment } from "@prisma/client";
-import { AppError, ValidationError } from "@/lib/errors";
+import { isDatabaseUnavailable } from "@/lib/db-errors";
+import {
+  AppError,
+  ServiceUnavailableError,
+  ValidationError,
+} from "@/lib/errors";
 import { logOperation } from "@/lib/logger";
 
 type RouteContext = { params: Promise<Record<string, string>> };
@@ -14,7 +19,8 @@ type Handler<C extends RouteContext = RouteContext> = (
  *  - a correlation id (x-request-id response header, lab section 8.2);
  *  - structured operation logging with duration;
  *  - typed-error mapping so validation/conflict/access failures stay
- *    distinguishable from technical failures (lab section 2.2).
+ *    distinguishable from technical failures (lab section 2.2), and an
+ *    unreachable database (503) from a defect in our code (500).
  *
  * Route handlers contain no business logic — they parse input, delegate to
  * lib/ services, and shape the response.
@@ -48,7 +54,9 @@ export function apiHandler<C extends RouteContext = RouteContext>(
       const appError =
         error instanceof AppError
           ? error
-          : new AppError("Internal server error", 500);
+          : isDatabaseUnavailable(error)
+            ? new ServiceUnavailableError()
+            : new AppError("Internal server error", 500);
       statusCode = appError.statusCode;
       if (!(error instanceof AppError)) {
         console.error(error);

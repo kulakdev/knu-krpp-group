@@ -52,6 +52,16 @@ export class InvalidTransitionError extends AppError {
 }
 
 /**
+ * A dependency (the database) cannot be reached. Technical failure, but
+ * distinguishable from a defect in our code (500).
+ */
+export class ServiceUnavailableError extends AppError {
+  constructor(message = "Database unavailable") {
+    super(message, 503);
+  }
+}
+
+/**
  * Marker for stubbed code paths that are assigned as team tasks
  * (see docs/backlog.md). Agents must NOT implement these autonomously —
  * each TODO(BOOK-x) is a teammate's individual contribution.
