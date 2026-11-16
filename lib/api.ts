@@ -48,7 +48,10 @@ export function apiHandler<C extends RouteContext = RouteContext>(
       const res = await handler(req, fullCtx);
       statusCode = res.status;
       res.headers.set("x-request-id", requestId);
-      log(req, op, requestId, "ok", statusCode, startedAt);
+      // A route may return a 5xx itself (health: 503 when the database is
+      // down) — still a failure for the metrics (BOOK-46).
+      const result = statusCode >= 500 ? "error" : "ok";
+      log(req, op, requestId, result, statusCode, startedAt);
       return res;
     } catch (error) {
       const appError = toAppError(error);

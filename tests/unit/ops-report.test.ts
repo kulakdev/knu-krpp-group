@@ -15,8 +15,7 @@ function line(
     level: statusCode >= 500 ? "error" : "info",
     requestId: `${op}-${ts}`,
     op,
-    // The health route returns its 503 itself, so apiHandler logs it as ok.
-    result: statusCode >= 400 && op !== "health.check" ? "error" : "ok",
+    result: statusCode >= 400 ? "error" : "ok",
     statusCode,
     durationMs,
   });
