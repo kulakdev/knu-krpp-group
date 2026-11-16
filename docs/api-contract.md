@@ -51,7 +51,7 @@ failure.
 - **Result 200:** the booking with `status: "CANCELLED"`; the slot is
   released. Works for `ACTIVE` and (v2.0) `PENDING` bookings — the owner
   withdraws the request. Re-cancelling an already cancelled own booking is
-  idempotent.
+  idempotent, also when two cancels by the owner arrive at the same time.
 - **Errors:** 401 — missing/unknown `x-user-id`; 403 — non-owner; 404 —
   unknown booking id; 409 — the booking was rejected (v2.0), or the booking
   changed meanwhile (concurrent admin decision).
