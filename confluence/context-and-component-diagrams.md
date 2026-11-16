@@ -16,64 +16,69 @@ flowchart TD
 
 ## Схема компонентів (Component Diagram)
 
+Matches `v2.0`. Folder names are the real ones in the repository.
+
 ```mermaid
 flowchart TB
-    subgraph Client Browser
-        UI_Search[Room Search View]
-        UI_Bookings[My Bookings View]
-        UI_Admin[Admin Approval Panel v2.0]
-        UI_Auth[Mock Auth Switcher]
+    subgraph Browser [Browser — client components]
+        Pages["Pages: app/page.tsx (dashboard),<br/>app/admin/page.tsx (v2.0)"]
+        Blocks["app/components/** — user switcher, interval and<br/>equipment pickers, rooms table, my bookings;<br/>app/admin/components/** — pending requests"]
+        Store["store/** — mock user (persisted), dashboard state"]
+        ApiClient["api-client/** — requests + React Query hooks<br/>(rooms, bookings, admin); http.ts sets x-user-id"]
     end
 
-    subgraph Next.js Monolith [Next.js Application Boundary]
-        subgraph Routing & Controllers [Route Handlers]
-            AuthGuard[Auth & Role Guard]
-            RoomRoutes["/api/rooms"]
-            BookingRoutes["/api/bookings"]
-            AdminRoutes["/api/bookings/:id/review"]
+    subgraph NextApp [Next.js application — server]
+        subgraph Routes [Route handlers app/api/** — transport only]
+            RoomRoutes["GET /api/rooms"]
+            BookingRoutes["GET, POST /api/bookings<br/>DELETE /api/bookings/:id"]
+            AdminRoutes["GET /api/admin/bookings<br/>POST /api/admin/bookings/:id/approve | reject (v2.0)"]
+            Health["GET /api/health"]
         end
 
-        subgraph Core Business Logic [Services]
-            IntervalEngine[Interval & Overlap Engine]
-            ApprovalEngine[Approval Workflow Engine v2.0]
-            LockManager[Transaction & Concurrency Lock]
+        subgraph Cross [Cross-cutting]
+            ApiHandler["lib/api — apiHandler: error mapping,<br/>x-request-id, operation log (lib/logger)"]
+            Auth["lib/auth — getCurrentUser (x-user-id)"]
         end
 
-        subgraph Data Access Layer
-            Prisma[Prisma Client ORM]
+        subgraph Services [Business logic]
+            BookingService["lib/booking-service — createBooking (row lock),<br/>listRooms, cancelBooking, decideBooking,<br/>listPendingBookings (admin check)"]
+            State["lib/booking-state — transitions,<br/>BLOCKING_STATUSES, initialStatus"]
+            Intervals["lib/intervals — [start, end) rules"]
         end
+
+        Prisma["Prisma Client (lib/prisma)"]
     end
 
-    subgraph Infrastructure
-        Postgres[(PostgreSQL 16 Engine)]
-    end
+    Postgres[(PostgreSQL 16)]
 
-    %% Connections
-    UI_Auth --> AuthGuard
-    UI_Search --> RoomRoutes
-    UI_Bookings --> BookingRoutes
-    UI_Admin --> AdminRoutes
+    Pages --> Blocks
+    Blocks --> Store
+    Blocks --> ApiClient
+    ApiClient --> RoomRoutes
+    ApiClient --> BookingRoutes
+    ApiClient --> AdminRoutes
 
-    RoomRoutes --> AuthGuard
-    BookingRoutes --> AuthGuard
-    AdminRoutes --> AuthGuard
+    RoomRoutes --> ApiHandler
+    BookingRoutes --> ApiHandler
+    AdminRoutes --> ApiHandler
+    Health --> ApiHandler
+    BookingRoutes --> Auth
+    AdminRoutes --> Auth
 
-    BookingRoutes --> IntervalEngine
-    BookingRoutes --> ApprovalEngine
-    BookingRoutes --> LockManager
-    AdminRoutes --> ApprovalEngine
-
-    IntervalEngine --> Prisma
-    ApprovalEngine --> Prisma
-    LockManager --> Prisma
-    RoomRoutes --> Prisma
-
+    RoomRoutes --> BookingService
+    BookingRoutes --> BookingService
+    AdminRoutes --> BookingService
+    BookingService --> State
+    BookingService --> Intervals
+    BookingService --> Prisma
+    Auth --> Prisma
+    Health --> Prisma
     Prisma --> Postgres
 ```
 
 ## Діаграма послідовності: створення бронювання (Sequence Diagram)
 
-Required by lab Section 5. Covers the v1.0 booking creation path, including the concurrency conflict branch governed by ADR-001.
+Required by lab Section 5. Covers the booking creation path, including the concurrency conflict branch governed by ADR-001 and the v2.0 initial status.
 
 ```mermaid
 sequenceDiagram
@@ -91,10 +96,10 @@ sequenceDiagram
     Auth-->>API: user (or 401 Unauthorized)
     API->>Svc: createBooking(user, roomId, start, end)
     Svc->>Svc: validate startTime < endTime (else 400)
-    Svc->>DB: BEGIN; SELECT room FOR UPDATE
-    Svc->>DB: find overlapping ACTIVE bookings in [start, end)
+    Svc->>DB: BEGIN; SELECT id, capacity FROM room FOR UPDATE (404 if none)
+    Svc->>DB: find overlapping bookings in BLOCKING_STATUSES [ACTIVE, PENDING], [start, end)
     alt No overlap
-        Svc->>DB: INSERT booking (status=ACTIVE); COMMIT
+        Svc->>DB: INSERT booking (status = initialStatus: ACTIVE, or PENDING if capacity > 100); COMMIT
         Svc-->>API: booking
         API-->>UI: 201 Created
     else Overlap exists
