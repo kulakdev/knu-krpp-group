@@ -16,6 +16,9 @@ export interface OperationLogEntry {
   statusCode: number;
   durationMs: number;
   error?: string;
+  // Technical failures only: the original error behind the generic message.
+  errorName?: string;
+  errorCode?: string;
 }
 
 export function logOperation(entry: OperationLogEntry): void {

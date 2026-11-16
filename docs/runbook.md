@@ -16,7 +16,9 @@ npm run dev                    # or: node .next/standalone/server.js for the pac
 
 - **Health probe:** `GET /api/health` — 200 ok / 503 database down.
 - **Operation log:** every API call emits one JSON line with `requestId`,
-  `op`, `userId`, `result`, `statusCode`, `durationMs`. Trace one failed
+  `op`, `userId`, `result`, `statusCode`, `durationMs`; a technical failure
+  also carries `errorName` / `errorCode` of the original error, and its
+  stack trace is printed on a separate `requestId=<id>` line. Trace one failed
   operation across components with:
   ```bash
   npm run dev | grep <requestId>
