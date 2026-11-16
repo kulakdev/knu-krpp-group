@@ -120,9 +120,16 @@ Compatibility of the v1.0 build with v2.0 data — **rollback is limited**:
 - Fault injection (facilitator only): `scripts/break-db.sh`
 - Recovery: `docker compose start db`, then health probe + smoke + booking
   count verification.
-- Facilitator steps (break / reference fix / review):
-  [`incident-drill-facilitator.md`](incident-drill-facilitator.md) — not
-  shown to the responder before the drill ends.
+- Facilitator steps of the 2026-11-16 drill (break / reference fix /
+  review): [`incident-drill-facilitator.md`](incident-drill-facilitator.md).
+- **Before the next drill (BOOK-49):** the responder searches `docs/` during
+  the drill, and on 2026-11-16 grep showed them part of the facilitator
+  guide. So the facilitator keeps the guide for a new scenario outside the
+  repository (a Confluence draft or a local file) and adds it to `docs/`
+  only after the review. A scenario already described in `docs/` (the
+  stopped DB) is not reused. Check in the responder's working copy before
+  the start: `git grep -il "<keyword of the new fault>" -- docs/` must not
+  find a facilitator guide.
 - Responder checklist: [`incident-drill-responder.md`](incident-drill-responder.md).
 - Results (roles, timeline, review, corrective actions): Confluence
   "5. Risks & Incident".
