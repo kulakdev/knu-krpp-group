@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiHandler } from "@/lib/api";
 import { ConflictError } from "@/lib/errors";
+import { buildReport } from "@/lib/ops-report";
 
 /**
  * BOOK-45 — a technical failure's operation log line names the original
@@ -81,5 +82,46 @@ describe("operation log for failed requests", () => {
 
     expect(lines[0]).toMatchObject({ statusCode: 409, result: "error" });
     expect(lines[0]).not.toHaveProperty("errorName");
+  });
+});
+
+/**
+ * BOOK-46 — corrective action from the incident drill of 2026-11-16: the
+ * health route returns its 503 itself, and it used to be logged as "ok", so
+ * ops:report showed a 0% error rate during the outage.
+ */
+describe("operation log for a 5xx returned by the route", () => {
+  const respondWith = (status: number) =>
+    apiHandler("health.check", async () =>
+      Response.json({ database: status === 200 ? "up" : "down" }, { status }),
+    )(new Request("http://localhost/api/health"));
+
+  it("records a returned 503 as an error and a returned 200 as ok", async () => {
+    const lines = captureLog();
+
+    await respondWith(503);
+    await respondWith(200);
+
+    const logged = lines.map(({ statusCode, result, level }) => ({
+      statusCode,
+      result,
+      level,
+    }));
+    expect(logged).toEqual([
+      { statusCode: 503, result: "error", level: "error" },
+      { statusCode: 200, result: "ok", level: "info" },
+    ]);
+  });
+
+  it("lets ops:report alert on the error rate in a drill-shaped outage", async () => {
+    const lines = captureLog();
+
+    // Outage minute of the drill: health polls only, all answering 503.
+    for (let poll = 0; poll < 5; poll++) await respondWith(503);
+    const report = buildReport(lines.map((line) => JSON.stringify(line)));
+    const window = report.windows[0];
+
+    expect(window).toMatchObject({ total: 5, error: 5, errorRate: 1 });
+    expect(window.alerts).toContain("error rate > 50%");
   });
 });
