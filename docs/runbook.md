@@ -51,6 +51,30 @@ Exercises health -> create -> list -> cancel, then the v2.0 approval path
 (large-room request -> PENDING -> admin approves -> ACTIVE -> cancel) and
 must print `SMOKE OK`.
 
+Smoke writes data: it leaves its own bookings behind in `CANCELLED`. After
+a recovery, run it only after the data check below, never before.
+
+## Post-recovery check order (BOOK-48)
+
+After any recovery (database restart, restore, rollback) run the checks in
+this order:
+
+1. **Health:** `curl -i http://localhost:3000/api/health` returns 200.
+2. **Data:** compare with the snapshot taken before the incident or change
+   (`npm run data:check > before.txt`, if one exists):
+   ```bash
+   npm run data:check > after.txt && diff before.txt after.txt
+   ```
+   An empty diff means no data was lost. Without a "before" snapshot,
+   check that the counts are plausible and invariants are OK.
+3. **Smoke:** `BASE_URL=http://localhost:3000 scripts/smoke.sh` prints
+   `SMOKE OK`.
+
+Why this order: smoke creates and cancels its own bookings, so running it
+before `data:check` changes the counts and the fingerprint, and the diff
+shows a difference even though nothing was lost (incident drill
+2026-11-16, factor 5).
+
 ## Performance check (QR-3)
 
 Run against the production build, never against data you need to keep —
@@ -118,8 +142,9 @@ Compatibility of the v1.0 build with v2.0 data — **rollback is limited**:
 ## Incident drill quick reference (lab section 8.3)
 
 - Fault injection (facilitator only): `scripts/break-db.sh`
-- Recovery: `docker compose start db`, then health probe + smoke + booking
-  count verification.
+- Recovery: `docker compose start db`, then the
+  [post-recovery check order](#post-recovery-check-order-book-48):
+  health -> `data:check` diff -> smoke.
 - Facilitator steps of the 2026-11-16 drill (break / reference fix /
   review): [`incident-drill-facilitator.md`](incident-drill-facilitator.md).
 - **Before the next drill (BOOK-49):** the responder searches `docs/` during
