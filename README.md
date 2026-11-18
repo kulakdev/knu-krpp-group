@@ -22,16 +22,28 @@ via `x-user-id` header.
 ## Setup
 
 ```bash
+git clone https://github.com/kulakdev/knu-krpp-group.git
+cd knu-krpp-group
 cp .env.example .env
 npm ci
+npx prisma generate    # Prisma 7 does not generate the client on install
 docker compose up -d db
 npm run db:migrate     # creates schema (first run) / applies migrations
 npm run db:seed        # idempotent: 3 users, 3 rooms
 npm run dev            # http://localhost:3000
 ```
 
-Seeded identities (use as `x-user-id` / in the UI switcher):
-`student-1`, `student-2`, `admin-1`.
+On Windows run the shell scripts (`scripts/*.sh`) from Git Bash, e.g.
+`bash scripts/smoke.sh`.
+
+Seeded identities — the id goes into the `x-user-id` header, the name is
+what the UI user switcher shows:
+
+| `x-user-id` | Name in the UI | Role |
+|---|---|---|
+| `student-1` | Alex Student | student |
+| `student-2` | Maria Student | student |
+| `admin-1` | Admin User | admin |
 
 Pages: `/` — rooms, booking and "My bookings"; `/admin` (v2.0) — the admin
 reviews requests for rooms with more than 100 seats (`hall-main`).
